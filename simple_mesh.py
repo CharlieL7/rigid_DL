@@ -1,13 +1,14 @@
+"""
+Simple class to hold the mesh positions and faces.
+three node flat triangles
+Has functions to calculate properties on the mesh.
+"""
+
 import numpy as np
 import geometric
-import gauss_quad
+import gauss_quad 
 
 class simple_mesh:
-    """
-    Simple class to hold the mesh positions and faces.
-    three node flat triangles
-    Has functions to calculate properties on the mesh.
-    """
 
     def __init__(self, x, f):
         """
@@ -21,10 +22,12 @@ class simple_mesh:
         self.vertices = np.array(x)
         self.faces = np.array(f)
         self.surf_area = self.calc_surf_area()
-        self.centroid = self.calc_centroid()
+        self.centroid = self.calc_mesh_centroid()
+        self.mom_inertia = self.calc_moment_intertia_tensor()
 
         # eigensolutions to translation and rotation
-        self.v, self.w = np.array([])
+        self.v = np.identity(3) / np.sqrt(self.surf_area)
+        self.w = self.calc_rotation_vecs() # rows are the vectors
 
 
     def calc_surf_area(self):
@@ -45,7 +48,7 @@ class simple_mesh:
         return s_a
 
 
-    def calc_centroid(self):
+    def calc_mesh_centroid(self):
         """
         Calculates the centroid of the mesh weighted by the element area
 
@@ -60,31 +63,79 @@ class simple_mesh:
             x_c += gauss_quad.int_over_tri(geometric.pos, nodes)
         x_c /= self.surf_area
         return x_c
+    
 
-
-    def calc_eigensols(self):
+    def calc_moment_intertia_tensor(self):
         """
-        Calculates the eigensolutions for translation and rotation
+        Calculates the moment of inertia tensor
 
         Parameters:
             requires verticies, faces, surf_area, centroid
         Returns:
-            (v, w)
-            v : eigensolutions for translations
-            w : eigensolutions for rotations
+            moment of inertia as ndarray of shape (3, 3)
         """
+        #TODO
+
+
+    def calc_rotation_vectors(self):
+        """
+        Calculates the rotation vectors (eigensolutions)
+
+        Parameters:
+            requires verticies, faces, surf_area, centroid, mom_inertia
+        Returns:
+            w : eigensolutions for rotations, ndarray (3, 3), rows are the vectors
+        """
+        eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
+        w = np.zeros(3, 3)
+        for i in range(3):
+            w[i] = eig_vecs[:, i] / (np.sqrt(eig_vals[i] * self.surf_area))
+        return w
+
 
     def get_nodes(self, face):
         """
         Gets the nodes of a face and puts nodes into a (3, 3) matrix of column vectors
 
         Paramters:
-            face : the face to get nodes for
+            face : the face to get nodes for, (3,) list-like integers
         Returns:
-            nodes : (3, 3) ndarray of nodes as columns
+            nodes : (3, 3) ndarray of nodes as rows
+                    note that numpy doesn't distinguish between rows and columns for "1D" arrays
         """
         x_0 = self.vertices[face[0]]
         x_1 = self.vertices[face[1]]
         x_2 = self.vertices[face[2]]
-        nodes = np.stack((x_0, x_1, x_2), axis=1) # making into column vectors
+        nodes = np.stack((x_0, x_1, x_2), axis=0)
         return nodes
+
+
+    def calc_normal(self, face):
+        """
+        Calculates the normal vector for a face
+
+        Paramters:
+            face : the face to get normal vector for, (3, ) list-like
+        Returns:
+            n : normalized normal vector, (3, ) ndarray
+        """
+        nodes = self.get_nodes(face)
+        n = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
+        x_c2tri = self.centroid - calc_tri_centroid(face)
+        if (np.dot(n, x_c2tri) < 0.):
+            n = -n
+        return n / np.norm(n)
+
+
+    def calc_tri_center(self, face):
+        """
+        Calculates the centroid point on a face
+
+        Parameters:
+            face : the face to get triangle center for, (3, ) list-like
+        Returns:
+            tri_c : (3, ) ndarray for triangle center
+        """
+        nodes = self.get_nodes(face)
+        tri_c = (1./3.) * (nodes[0] + nodes[1] + nodes[2])
+        return tri_c

@@ -44,7 +44,7 @@ def read_dat(filename):
             else:
                 is_header = False
                 # get the next two Tecplot lines and then go back one line
-                header_block.append(ggtmp_line)
+                header_block.append(tmp_line)
                 last_pos = dat_file.tell()
                 tmp_line = dat_file.readline()
                 header_block.append(tmp_line)
@@ -86,13 +86,14 @@ def read_dat(filename):
 def read_short_dat(filename):
     """
      Reads in vesicle shape dat files for tecplot into python lists.
-     This version only reads the positions and connectivity
+     This version only reads the positions & connectivity
+     Keeps the header just in a block without reading it
 
      Parameters:
         filename: the name of the file as a string
      Returns:
-        (all_data, f2v, params)
-        all_data: data for each vertex, first 3 will always be position
+        (x_data, f2v, params)
+        x_data: position for each vertex
         f2v: connectivity data
         params: only header_block
     """
@@ -118,15 +119,15 @@ def read_short_dat(filename):
             type_line = next(reader)
             nvert = int(type_line[1][2:])
             nface = int(type_line[2][2:])
-            all_data = [] # position + all other data
+            x_data = [] # position
             f2v = [] # connectivity
 
             count = 0
             while count < nvert:
-                lst = next(reader)
-                all_data.append(lst)
+                lst = next(reader)[0:3]
+                x_data.append(lst)
                 count += 1
-            all_data = np.array(all_data, dtype=float)
+            x_data = np.array(x_data, dtype=float)
 
             count = 0
             while count < nface:
@@ -140,7 +141,7 @@ def read_short_dat(filename):
 
     try:
         params = {"header_block": header_block}
-        return (all_data, f2v, params)
+        return (x_data, f2v, params)
     except NameError as e:
         print("One of the required variables was not instantiated: {}".format(e))
 

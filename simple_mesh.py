@@ -5,8 +5,8 @@ Has functions to calculate properties on the mesh.
 """
 
 import numpy as np
-import geometric
-import gauss_quad 
+import geometric as gm
+import gauss_quad as gq
 
 class simple_mesh:
 
@@ -23,11 +23,11 @@ class simple_mesh:
         self.faces = np.array(f)
         self.surf_area = self.calc_surf_area()
         self.centroid = self.calc_mesh_centroid()
-        self.mom_inertia = self.calc_moment_intertia_tensor()
+        self.mom_inertia = self.calc_moment_inertia_tensor()
 
         # eigensolutions to translation and rotation
         self.v = np.identity(3) / np.sqrt(self.surf_area)
-        self.w = self.calc_rotation_vecs() # rows are the vectors
+        self.w = self.calc_rotation_vectors() # rows are the vectors
 
 
     def calc_surf_area(self):
@@ -39,12 +39,10 @@ class simple_mesh:
         Returns:
             total surface area of mesh
         """
-        # tmp function that just returns 1.
-        def tmp(_eta, _xi, _nodes): return 1.
         s_a = 0.0
         for f in self.faces: # get rows
             nodes = self.get_nodes(f)
-            s_a += gauss_quad.int_over_tri(tmp, nodes)
+            s_a += gq.int_over_tri(gm.const_func, nodes)
         return s_a
 
 
@@ -57,24 +55,32 @@ class simple_mesh:
         Returns:
             centroid as ndarray of shape (3, )
         """
-        x_c = np.zeros([3, 1])
+        x_c = np.zeros(3)
         for f in self.faces:
             nodes = self.get_nodes(f)
-            x_c += gauss_quad.int_over_tri(geometric.pos, nodes)
+            x_c += gq.int_over_tri(gm.pos, nodes)
         x_c /= self.surf_area
         return x_c
-    
 
-    def calc_moment_intertia_tensor(self):
+
+    def calc_moment_inertia_tensor(self):
         """
         Calculates the moment of inertia tensor
+        Uses element area weighting
 
         Parameters:
             requires verticies, faces, surf_area, centroid
         Returns:
             moment of inertia as ndarray of shape (3, 3)
         """
-        #TODO
+
+        inertia_tensor = np.zeros((3, 3))
+        for f in self.faces:
+            nodes = self.get_nodes(f)
+            inertia_tensor += gq.int_over_tri(gm.inertia_func, nodes)
+
+        inertia_tensor /= self.surf_area
+        return inertia_tensor
 
 
     def calc_rotation_vectors(self):
@@ -87,7 +93,7 @@ class simple_mesh:
             w : eigensolutions for rotations, ndarray (3, 3), rows are the vectors
         """
         eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
-        w = np.zeros(3, 3)
+        w = np.zeros((3, 3))
         for i in range(3):
             w[i] = eig_vecs[:, i] / (np.sqrt(eig_vals[i] * self.surf_area))
         return w
@@ -95,7 +101,7 @@ class simple_mesh:
 
     def get_nodes(self, face):
         """
-        Gets the nodes of a face and puts nodes into a (3, 3) matrix of column vectors
+        Gets the nodes of a face and puts nodes into a (3, 3) matrix
 
         Paramters:
             face : the face to get nodes for, (3,) list-like integers
@@ -121,10 +127,10 @@ class simple_mesh:
         """
         nodes = self.get_nodes(face)
         n = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
-        x_c2tri = self.centroid - calc_tri_centroid(face)
-        if (np.dot(n, x_c2tri) < 0.):
+        x_c2tri = self.centroid - self.calc_tri_center(face)
+        if np.dot(n, x_c2tri) < 0.:
             n = -n
-        return n / np.norm(n)
+        return n / np.linalg.norm(n)
 
 
     def calc_tri_center(self, face):

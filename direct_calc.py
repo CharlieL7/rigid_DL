@@ -18,6 +18,9 @@ def main():
     f2v = f2v - 1 # indexing change
     mesh = sm.simple_mesh(x_data, f2v)
     v_in = sphere_eigen_func(mesh, w) # eigenfunction
+    print("v_in")
+    print("-------------------")
+    print(v_in)
     num_faces = mesh.faces.shape[0]
     v_out = np.zeros((num_faces, 3))
     C = np.zeros((3 * num_faces, 3 * num_faces))
@@ -63,17 +66,17 @@ def sphere_eigen_func(mesh, w):
     for m in range(num_faces):
         face = mesh.faces[m]
         center = mesh.calc_tri_center(face)
-        (r, theta, phi) = cart2sph(center) # all the radii should be essentially the same
-        v_sph = np.array([0., 0., w * r * math.sin(theta)])
-        v_list[m] = sph2cart(v_sph)
+        c_sph = cart2sph(center) # all the radii should be essentially the same
+        v_sph = np.array([0., 0., w * c_sph[0] * math.sin(c_sph[1])])
+        v_list[m] = v_sph2cart(c_sph, v_sph)
     return v_list
 
 
 def cart2sph(vec):
-    (x, y, z) = vec 
+    (x, y, z) = vec
     xy = x**2 + y**2
     r = math.sqrt(xy + z**2)
-    theta = math.atan2(z, math.sqrt(xy))
+    theta = math.acos(z/r)
     phi = math.atan2(y, x)
     return np.array([r, theta, phi])
 
@@ -84,6 +87,15 @@ def sph2cart(vec):
     y = r * math.sin(theta) * math.sin(phi)
     z = r * math.cos(theta)
     return np.array([x, y, z])
+
+
+def v_sph2cart(x, v):
+    (r, theta, phi) = x
+    (rd, td, pd) = v
+    dxdt = rd * math.sin(theta) * math.cos(phi) + r * math.cos(theta) * td * math.cos(phi) - r * math.sin(theta) * math.sin(phi) * pd
+    dydt = rd * math.sin(theta) * math.sin(phi) + r * math.cos(theta) * td * math.sin(phi) + r * math.sin(theta) * math.cos(phi) * pd
+    dzdt = rd * math.cos(theta) - r * math.sin(theta) * td
+    return np.array([dxdt, dydt, dzdt])
 
 
 def make_quad_func(x_0, n):

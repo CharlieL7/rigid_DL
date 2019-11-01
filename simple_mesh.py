@@ -22,6 +22,7 @@ class simple_mesh:
         self.vertices = np.array(x)
         self.faces = np.array(f)
         self.surf_area = self.calc_surf_area()
+        self.center_mesh();
         self.centroid = self.calc_mesh_centroid()
         self.mom_inertia = self.calc_moment_inertia_tensor()
 
@@ -145,3 +146,12 @@ class simple_mesh:
         nodes = self.get_nodes(face)
         tri_c = (1./3.) * (nodes[0] + nodes[1] + nodes[2])
         return tri_c
+
+
+    def center_mesh(self):
+        """
+        Move the mesh such that the centroid is at [0, 0, 0]
+        """
+        old_centroid = self.calc_mesh_centroid()
+        self.vertices -= old_centroid
+

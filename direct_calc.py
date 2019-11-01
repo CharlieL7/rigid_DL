@@ -3,6 +3,7 @@ Direct calulation of the velocity solution from an eigenfunction density input
 To check if the method we are employing makes sense.
 """
 import sys
+import csv
 import math
 import numpy as np
 import simple_mesh as sm
@@ -10,18 +11,18 @@ import input_output as io
 import gauss_quad as gq
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: mesh_name, rotational velocity")
+    if len(sys.argv) != 2:
+        print("Usage: mesh_name")
+        sys.exit()
     mesh_name = sys.argv[1]
-    w = float(sys.argv[2])
     (x_data, f2v, _params) = io.read_short_dat(mesh_name)
     f2v = f2v - 1 # indexing change
     mesh = sm.simple_mesh(x_data, f2v)
-    v_in = sphere_eigen_func(mesh, w) # eigenfunction
-    print("v_in")
-    print("-------------------")
-    print(v_in)
     num_faces = mesh.faces.shape[0]
+    #v_in = sphere_eigen_func(mesh, w) # eigenfunction
+    v_in = np.zeros((num_faces, 3))
+    v_in[:, 1] = 2.
+    v_in[:, 0] = 1.
     v_out = np.zeros((num_faces, 3))
     C = np.zeros((3 * num_faces, 3 * num_faces))
     c_0 = (1. / (4. * math.pi))
@@ -31,24 +32,22 @@ def main():
             if n != m:
                 field_nodes = mesh.get_nodes(mesh.faces[n])
                 field_normal = mesh.calc_normal(mesh.faces[n])
-                sub_mat = -c_0 * gq.int_over_tri(make_quad_func(src_center, field_normal), field_nodes)
+                sub_mat = gq.int_over_tri(make_quad_func(src_center, field_normal), field_nodes)
                 C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)] = sub_mat
                 v_out[m] += np.dot(v_in[n], sub_mat)
 
-    # singular points as function of all regular points
+    # singularity subtraction 
     for m in range(num_faces): # source points
         src_center = mesh.calc_tri_center(mesh.faces[m])
         sub_mat = np.zeros((3, 3))
         for n in range(num_faces): # over field points
             if n != m:
-                sub_mat += c_0 * C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)]
+                sub_mat -= C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)]
 
-        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] = sub_mat + np.identity(3)
+        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] = sub_mat - np.identity(3)
         v_out[m] += np.dot(v_in[m], C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)])
-
-    print("v_out")
-    print("-------------------")
-    print(v_out)
+    
+    write_vel(v_in, v_out, "test.csv")
 
 
 def sphere_eigen_func(mesh, w):
@@ -138,6 +137,25 @@ def stresslet(x, x_0, n):
     r = np.linalg.norm(x_hat)
     S_ij = -6 * np.outer(x_hat, x_hat) * np.dot(x_hat, n) / (r**5)
     return S_ij
+
+
+def write_vel(v_in, v_out, out_name):
+    """
+     Writes vesicle shape data into a tecplot readable .dat format.
+
+     Parameters:
+        v_in : input eigenfunction velocities
+        v_out : output velocities
+        out_name : string of the filename you want for the new file
+     Returns:
+         None
+    """
+    with open(out_name, 'w') as out:
+        writer = csv.writer(out, delimiter=' ', lineterminator="\n")
+        out.write("v_in\n")
+        writer.writerows(v_in)
+        out.write("v_out\n")
+        writer.writerows(v_out)
 
 
 if __name__ == "__main__":

@@ -19,13 +19,15 @@ def main():
     f2v = f2v - 1 # indexing change
     mesh = sm.simple_mesh(x_data, f2v)
     num_faces = mesh.faces.shape[0]
-    #v_in = sphere_eigen_func(mesh, w) # eigenfunction
+    v_in = sphere_eigen_func(mesh, 1.) # eigenfunction
+    """
     v_in = np.zeros((num_faces, 3))
-    v_in[:, 1] = 2.
     v_in[:, 0] = 1.
+    v_in[:, 1] = 2.
+    """
     v_out = np.zeros((num_faces, 3))
     C = np.zeros((3 * num_faces, 3 * num_faces))
-    c_0 = (1. / (4. * math.pi))
+    c_0 = -(1. / (4. * math.pi))
     for m in range(num_faces): # source points
         src_center = mesh.calc_tri_center(mesh.faces[m])
         for n in range(num_faces): # field points
@@ -33,10 +35,11 @@ def main():
                 field_nodes = mesh.get_nodes(mesh.faces[n])
                 field_normal = mesh.calc_normal(mesh.faces[n])
                 sub_mat = gq.int_over_tri(make_quad_func(src_center, field_normal), field_nodes)
-                C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)] = sub_mat
+                C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)] = c_0 * sub_mat
                 v_out[m] += np.dot(v_in[n], sub_mat)
 
-    # singularity subtraction 
+    # singularity subtraction
+    # total - regular points
     for m in range(num_faces): # source points
         src_center = mesh.calc_tri_center(mesh.faces[m])
         sub_mat = np.zeros((3, 3))
@@ -44,10 +47,51 @@ def main():
             if n != m:
                 sub_mat -= C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)]
 
-        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] = sub_mat - np.identity(3)
+        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] = c_0 * (sub_mat - np.identity(3))
         v_out[m] += np.dot(v_in[m], C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)])
-    
+
     write_vel(v_in, v_out, "test.csv")
+    w, v = np.linalg.eig(C)
+    print(w)
+    write_vel(v_in, v_out, "test_vels.csv")
+    write_eig(w, "test_eigs.csv")
+
+
+def main2():
+    """
+    other singularity subtraction
+    """
+    if len(sys.argv) != 2:
+        print("Usage: mesh_name")
+        sys.exit()
+    mesh_name = sys.argv[1]
+    (x_data, f2v, _params) = io.read_short_dat(mesh_name)
+    f2v = f2v - 1 # indexing change
+    mesh = sm.simple_mesh(x_data, f2v)
+    num_faces = mesh.faces.shape[0]
+    #v_in = sphere_eigen_func(mesh, w) # eigenfunction
+    v_in = sphere_eigen_func(mesh, 1.)
+    v_out = np.zeros((num_faces, 3))
+    C = np.zeros((3 * num_faces, 3 * num_faces))
+    c_0 = -(1. / (4. * math.pi))
+    for m in range(num_faces): # source points
+        src_center = mesh.calc_tri_center(mesh.faces[m])
+        for n in range(num_faces): # field points
+            field_nodes = mesh.get_nodes(mesh.faces[n])
+            field_normal = mesh.calc_normal(mesh.faces[n])
+            if n != m:
+                sub_mat = gq.int_over_tri(make_quad_func(src_center, field_normal), field_nodes)
+                C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)] += c_0 * sub_mat
+                C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] -= c_0 * sub_mat
+            # do nothing n == m for constant elements
+        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] -= np.identity(3)
+
+    v_out = np.dot(C, v_in.flatten('C'))
+    v_out = v_out.reshape(v_in.shape, order='C')
+    w, v = np.linalg.eig(C)
+    print(w.real)
+    write_vel(v_in, v_out, "test_vels.csv")
+    write_eig(w, "test_eigs.csv")
 
 
 def sphere_eigen_func(mesh, w):
@@ -141,7 +185,7 @@ def stresslet(x, x_0, n):
 
 def write_vel(v_in, v_out, out_name):
     """
-     Writes vesicle shape data into a tecplot readable .dat format.
+     Writes input potentials and output potential to file
 
      Parameters:
         v_in : input eigenfunction velocities
@@ -158,5 +202,22 @@ def write_vel(v_in, v_out, out_name):
         writer.writerows(v_out)
 
 
+def write_eig(w, out_name):
+    """
+    Writes eigenvalues and eigenfunctions of kernel to file
+
+     Parameters:
+        w : eigenvalues
+        v : eigenvectors
+        out_name : string of the filename you want for the new file
+     Returns:
+         None
+    """
+    with open(out_name, 'w') as out:
+        writer = csv.writer(out, delimiter=' ', lineterminator="\n")
+        out.write("eigenvalues\n")
+        writer.writerow(w.real)
+
+
 if __name__ == "__main__":
-    main()
+    main2()

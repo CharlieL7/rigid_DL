@@ -4,7 +4,7 @@ import numpy as np
 def int_over_tri(func, nodes):
     """
     Integrate a function over a triangle surface using Gaussian quadrature.
-    Seven point quadrature. I'm not sure why, used in old code.
+    Seven point quadrature.
 
     Parameters:
         func : function to integrate, can return any order tensor

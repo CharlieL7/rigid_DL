@@ -22,7 +22,7 @@ class simple_mesh:
         self.vertices = np.array(x)
         self.faces = np.array(f)
         self.surf_area = self.calc_surf_area()
-        self.center_mesh();
+        self.center_mesh()
         self.centroid = self.calc_mesh_centroid()
         self.mom_inertia = self.calc_moment_inertia_tensor()
 

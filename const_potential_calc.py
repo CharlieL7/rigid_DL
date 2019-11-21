@@ -5,6 +5,7 @@ To check if the method we are employing makes sense.
 import sys
 import csv
 import math
+import time
 import numpy as np
 import simple_mesh as sm
 import input_output as io
@@ -50,9 +51,7 @@ def main():
         C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] = c_0 * (sub_mat - np.identity(3))
         v_out[m] += np.dot(v_in[m], C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)])
 
-    write_vel(v_in, v_out, "test.csv")
     w, v = np.linalg.eig(C)
-    print(w)
     write_vel(v_in, v_out, "test_vels.csv")
     write_eig(w, "test_eigs.csv")
 
@@ -65,15 +64,24 @@ def main2():
         print("Usage: mesh_name")
         sys.exit()
     mesh_name = sys.argv[1]
+
+    t0 = time.time()
+
     (x_data, f2v, _params) = io.read_short_dat(mesh_name)
     f2v = f2v - 1 # indexing change
     mesh = sm.simple_mesh(x_data, f2v)
     num_faces = mesh.faces.shape[0]
-    #v_in = sphere_eigen_func(mesh, w) # eigenfunction
-    v_in = sphere_eigen_func(mesh, 1.)
+
+    t1 = time.time()
+    print("{}, mesh input walltime".format(t1 - t0))
+    v_in = off_diag_ros_field(mesh)
     v_out = np.zeros((num_faces, 3))
     C = np.zeros((3 * num_faces, 3 * num_faces))
     c_0 = -(1. / (4. * math.pi))
+
+    t2 = time.time()
+    print("{}, eigenfunction calc walltime".format(t2 - t1))
+
     for m in range(num_faces): # source points
         src_center = mesh.calc_tri_center(mesh.faces[m])
         for n in range(num_faces): # field points
@@ -88,10 +96,20 @@ def main2():
 
     v_out = np.dot(C, v_in.flatten('C'))
     v_out = v_out.reshape(v_in.shape, order='C')
+
+    t3 = time.time()
+    print("{}, matrix forming and dotting walltime".format(t3 - t2))
+
     w, v = np.linalg.eig(C)
-    print(w.real)
-    write_vel(v_in, v_out, "test_vels.csv")
-    write_eig(w, "test_eigs.csv")
+
+    t4 = time.time()
+    print("{}, solving eigenfunction walltime".format(t4 - t3))
+
+    write_vel(v_in, v_out, "vel_ros.csv")
+    write_eig(w, "eig_ros.csv")
+
+    t5 = time.time()
+    print("{}, write out walltime".format(t5 - t4))
 
 
 def sphere_eigen_func(mesh, w):
@@ -99,6 +117,7 @@ def sphere_eigen_func(mesh, w):
     Eigenfunction for the double layer potential to check the solutions from the code integrals
     Rotating rigid sphere
     Returns velocities at each vertex in cartesional coordinates
+    for constant potentials
 
     Parameters:
         mesh : simple mesh input
@@ -112,6 +131,26 @@ def sphere_eigen_func(mesh, w):
         c_sph = cart2sph(center) # all the radii should be essentially the same
         v_sph = np.array([0., 0., w * c_sph[0] * math.sin(c_sph[1])])
         v_list[m] = v_sph2cart(c_sph, v_sph)
+    return v_list
+
+
+def off_diag_ros_field(mesh):
+    """
+    Off diagonal rate of strain field eigenfunction
+    Returns velocites at each vertex in cartesional coordinates
+    Note that this is already in cartesional coordinates
+    for constant potentials
+
+    Parameters:
+        mesh : simple mesh input
+    """
+    E = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+    num_faces = mesh.faces.shape[0]
+    v_list = np.zeros((num_faces, 3))
+    for m in range(num_faces):
+        face = mesh.faces[m]
+        center = mesh.calc_tri_center(face)
+        v_list[m] = np.dot(E, center)
     return v_list
 
 

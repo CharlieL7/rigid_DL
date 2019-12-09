@@ -11,7 +11,7 @@ import simple_mesh as sm
 import input_output as io
 import gauss_quad as gq
 
-def main():
+def main1():
     if len(sys.argv) != 2:
         print("Usage: mesh_name")
         sys.exit()
@@ -21,14 +21,9 @@ def main():
     mesh = sm.simple_mesh(x_data, f2v)
     num_faces = mesh.faces.shape[0]
     v_in = sphere_eigen_func(mesh, 1.) # eigenfunction
-    """
-    v_in = np.zeros((num_faces, 3))
-    v_in[:, 0] = 1.
-    v_in[:, 1] = 2.
-    """
     v_out = np.zeros((num_faces, 3))
     C = np.zeros((3 * num_faces, 3 * num_faces))
-    c_0 = -(1. / (4. * math.pi))
+    c_0 = (1. / (4. * math.pi)) # not sure why this is positive
     for m in range(num_faces): # source points
         src_center = mesh.calc_tri_center(mesh.faces[m])
         for n in range(num_faces): # field points
@@ -36,8 +31,7 @@ def main():
                 field_nodes = mesh.get_nodes(mesh.faces[n])
                 field_normal = mesh.calc_normal(mesh.faces[n])
                 sub_mat = gq.int_over_tri(make_quad_func(src_center, field_normal), field_nodes)
-                C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)] = c_0 * sub_mat
-                v_out[m] += np.dot(v_in[n], sub_mat)
+                C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)] += sub_mat
 
     # singularity subtraction
     # total - regular points
@@ -46,14 +40,16 @@ def main():
         sub_mat = np.zeros((3, 3))
         for n in range(num_faces): # over field points
             if n != m:
-                sub_mat -= C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)]
+                sub_mat += C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)]
+        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] = -4. * math.pi * np.identity(3) - sub_mat
 
-        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] = c_0 * (sub_mat - np.identity(3))
-        v_out[m] += np.dot(v_in[m], C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)])
+    C = np.dot(c_0, C)
+    v_out = np.dot(C, v_in.flatten('C'))
+    v_out = v_out.reshape(v_in.shape, order='C')
 
-    w, v = np.linalg.eig(C)
-    write_vel(v_in, v_out, "test_vels.csv")
-    write_eig(w, "test_eigs.csv")
+    w, _v = np.linalg.eig(C)
+    io.write_vel(v_in, v_out, "test_vels.csv")
+    io.write_eig(w, "test_eigs.csv")
 
 
 def main2():
@@ -77,39 +73,39 @@ def main2():
     v_in = off_diag_ros_field(mesh)
     v_out = np.zeros((num_faces, 3))
     C = np.zeros((3 * num_faces, 3 * num_faces))
-    c_0 = -(1. / (4. * math.pi))
+    c_0 = (1. / (4. * math.pi)) # note to future self: think of formulation without eigenvalue, always this constant (inside or outside particle), then find eigenvalues, setting direction of forcing function
 
-    t2 = time.time()
-    print("{}, eigenfunction calc walltime".format(t2 - t1))
+    t0 = time.time()
+    print("{}, eigenfunction calc walltime".format(t0 - t1))
 
     for m in range(num_faces): # source points
         src_center = mesh.calc_tri_center(mesh.faces[m])
         for n in range(num_faces): # field points
-            field_nodes = mesh.get_nodes(mesh.faces[n])
-            field_normal = mesh.calc_normal(mesh.faces[n])
             if n != m:
+                field_nodes = mesh.get_nodes(mesh.faces[n])
+                field_normal = mesh.calc_normal(mesh.faces[n])
                 sub_mat = gq.int_over_tri(make_quad_func(src_center, field_normal), field_nodes)
-                C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)] += c_0 * sub_mat
-                C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] -= c_0 * sub_mat
+                C[(3 * m):(3 * m + 3), (3 * n):(3 * n + 3)] += sub_mat
+                C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] -= sub_mat
             # do nothing n == m for constant elements
-        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] -= np.identity(3)
-
+        C[(3 * m):(3 * m + 3), (3 * m):(3 * m + 3)] -= 4. * math.pi * np.identity(3)
+    C = np.dot(c_0, C)
     v_out = np.dot(C, v_in.flatten('C'))
     v_out = v_out.reshape(v_in.shape, order='C')
 
-    t3 = time.time()
-    print("{}, matrix forming and dotting walltime".format(t3 - t2))
+    t1 = time.time()
+    print("{}, matrix forming and dotting walltime".format(t1 - t0))
 
-    w, v = np.linalg.eig(C)
+    w, _v = np.linalg.eig(C)
 
-    t4 = time.time()
-    print("{}, solving eigenfunction walltime".format(t4 - t3))
+    t0 = time.time()
+    print("{}, solving eigenfunction walltime".format(t0 - t1))
 
-    write_vel(v_in, v_out, "vel_ros.csv")
-    write_eig(w, "eig_ros.csv")
+    io.write_vel(v_in, v_out, "vel_ros.csv")
+    io.write_eig(w, "eig_ros.csv")
 
-    t5 = time.time()
-    print("{}, write out walltime".format(t5 - t4))
+    t1 = time.time()
+    print("{}, write out walltime".format(t1 - t0))
 
 
 def sphere_eigen_func(mesh, w):
@@ -220,42 +216,6 @@ def stresslet(x, x_0, n):
     r = np.linalg.norm(x_hat)
     S_ij = -6 * np.outer(x_hat, x_hat) * np.dot(x_hat, n) / (r**5)
     return S_ij
-
-
-def write_vel(v_in, v_out, out_name):
-    """
-     Writes input potentials and output potential to file
-
-     Parameters:
-        v_in : input eigenfunction velocities
-        v_out : output velocities
-        out_name : string of the filename you want for the new file
-     Returns:
-         None
-    """
-    with open(out_name, 'w') as out:
-        writer = csv.writer(out, delimiter=' ', lineterminator="\n")
-        out.write("v_in\n")
-        writer.writerows(v_in)
-        out.write("v_out\n")
-        writer.writerows(v_out)
-
-
-def write_eig(w, out_name):
-    """
-    Writes eigenvalues and eigenfunctions of kernel to file
-
-     Parameters:
-        w : eigenvalues
-        v : eigenvectors
-        out_name : string of the filename you want for the new file
-     Returns:
-         None
-    """
-    with open(out_name, 'w') as out:
-        writer = csv.writer(out, delimiter=' ', lineterminator="\n")
-        out.write("eigenvalues\n")
-        writer.writerow(w.real)
 
 
 if __name__ == "__main__":

@@ -26,9 +26,8 @@ def int_over_tri(func, nodes):
     f7 = func(1.0/3.0, 1.0/3.0, nodes)
 
     # metric function for surface area
-    dx_deta = nodes[1] - nodes[0]
-    dx_dxi = nodes[2] - nodes[0]
-    h = math.sqrt(np.dot(dx_deta, dx_deta) * np.dot(dx_dxi, dx_dxi) - np.dot(dx_deta, dx_dxi) ** 2)
+    n = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
+    h = np.linalg.norm(n)
 
     ret = f1 * w[0] + f2 * w[1] + f3 * w[2] + f4 * w[3] + f5 * w[4] + f6 * w[5] + f7 * w[6]
     ret *= 0.5 * h

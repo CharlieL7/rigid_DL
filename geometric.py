@@ -1,8 +1,10 @@
 import numpy as np
+import sys
+import math
 
 def pos(eta, xi, nodes):
     """
-    position in a triangle as a function of eta and xi
+    position in a flat, linear triangle as a function of eta and xi
 
     Parameters:
         eta : parametric coordinate, scalar
@@ -45,3 +47,58 @@ def const_func(eta, xi, nodes):
     constant function for input into int_over_tri
     """
     return 1
+
+
+def shape_func_linear(eta, xi, num):
+    """
+    shape functions for linear elements
+    """
+    if num == 0:
+        return 1 - eta - xi
+    elif num == 1:
+        return eta
+    elif num == 2:
+        return xi
+    else:
+        sys.exit("failure on shape_func(), unexpected num")
+
+
+def cart2sph(vec):
+    """
+    cartesional coordinates to spherical coordinates
+    """
+    (x, y, z) = vec
+    xy = x**2 + y**2
+    r = math.sqrt(xy + z**2)
+    theta = math.acos(z/r)
+    phi = math.atan2(y, x)
+    return np.array([r, theta, phi])
+
+
+def sph2cart(vec):
+    """
+    spherical coordinates to cartesional coordinates
+    """
+    (r, theta, phi) = vec
+    x = r * math.sin(theta) * math.cos(phi)
+    y = r * math.sin(theta) * math.sin(phi)
+    z = r * math.cos(theta)
+    return np.array([x, y, z])
+
+
+def v_sph2cart(x, v):
+    """
+    spherical velocity to cartesional velocity
+    """
+    (r, theta, phi) = x
+    (rd, td, pd) = v
+    dxdt = (
+        rd * math.sin(theta) * math.cos(phi) + r * math.cos(theta) *
+        td * math.cos(phi) - r * math.sin(theta) * math.sin(phi) * pd
+    )
+    dydt = (
+        rd * math.sin(theta) * math.sin(phi) + r * math.cos(theta) *
+        td * math.sin(phi) + r * math.sin(theta) * math.cos(phi) * pd
+    )
+    dzdt = rd * math.cos(theta) - r * math.sin(theta) * td
+    return np.array([dxdt, dydt, dzdt])

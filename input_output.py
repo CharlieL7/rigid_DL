@@ -196,3 +196,38 @@ def calc_moment_inertia_tensor(x):
         eigvecs[:, 2] = -eigvecs[:, 2]
 
     return (inertia_tensor, eigvals, eigvecs)
+
+
+def write_vel(v_in, v_out, out_name):
+    """
+     Writes input potentials and output potential to file
+
+     Parameters:
+        v_in : input eigenfunction velocities
+        v_out : output velocities
+        out_name : string of the filename you want for the new file
+     Returns:
+         None
+    """
+    with open(out_name, 'w') as out:
+        writer = csv.writer(out, delimiter=' ', lineterminator="\n")
+        out.write("v_in\n")
+        writer.writerows(v_in)
+        out.write("v_out\n")
+        writer.writerows(v_out)
+
+
+def write_eig(w, out_name):
+    """
+    Writes eigenvalues of kernel to file
+
+     Parameters:
+        w : eigenvalues
+        out_name : string of the filename you want for the new file
+     Returns:
+         None
+    """
+    with open(out_name, 'w') as out:
+        out.write("eigenvalues\n")
+        for a in w.real:
+            out.write("{}\n".format(a))

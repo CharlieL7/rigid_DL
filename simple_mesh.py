@@ -19,7 +19,10 @@ class simple_mesh:
             f : list-like with indices to vertices of a triangle
                 expecting 3 node triangles (N, 3)
         """
+        # (N, 3) ndarray
         self.vertices = np.array(x)
+
+        # (N, 3) ndarray
         self.faces = np.array(f)
         self.surf_area = self.calc_surf_area()
         self.center_mesh()
@@ -29,14 +32,14 @@ class simple_mesh:
         # eigensolutions to translation and rotation
         self.v = np.identity(3) / np.sqrt(self.surf_area)
         self.w = self.calc_rotation_vectors() # rows are the vectors
-
+   
 
     def calc_surf_area(self):
         """
         Calculates the surface area of the mesh
 
         Parameters:
-            requires verticies, faces to be set
+            requires vertices, faces to be set
         Returns:
             total surface area of mesh
         """
@@ -128,7 +131,8 @@ class simple_mesh:
         """
         nodes = self.get_nodes(face)
         n = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
-        x_c2tri = self.centroid - self.calc_tri_center(face)
+        # make outwards pointing
+        x_c2tri = self.calc_tri_center(face) - self.centroid
         if np.dot(n, x_c2tri) < 0.:
             n = -n
         return n / np.linalg.norm(n)
@@ -155,3 +159,22 @@ class simple_mesh:
         old_centroid = self.calc_mesh_centroid()
         self.vertices -= old_centroid
 
+
+    def check_in_face(self, vert_num, face_num):
+        """
+        Checks if a vertex is contained in a face
+        Return the local node index if found in the face
+        Gives the first index if multiple (there should not be multiple for a valid mesh)
+
+        Parameters:
+            vert_num : global index for vertex
+            face_num : index for face
+        Returns:
+            (is_singular, local_singular_index)
+            is_sinuglar : if integral is singular
+            local_singular_index : local index [0:N) of singular node
+        """
+        for i, node_global_ind in enumerate(self.faces[face_num]):
+            if node_global_ind == vert_num:
+                return (True, i)
+        return (False, None)

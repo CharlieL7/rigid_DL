@@ -34,5 +34,7 @@
 # Python imports
 *.pyc
 
-# Output
+# Input/output
 *.csv
+meshes/*
+out/*

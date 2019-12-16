@@ -33,3 +33,6 @@
 
 # Python imports
 *.pyc
+
+# Output
+*.csv

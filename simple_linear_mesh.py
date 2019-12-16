@@ -1,6 +1,6 @@
 """
 Simple class to hold the mesh positions and faces.
-three node flat triangles
+Three node flat triangles
 Has functions to calculate properties on the mesh.
 """
 
@@ -8,7 +8,7 @@ import numpy as np
 import geometric as gm
 import gauss_quad as gq
 
-class simple_mesh:
+class simple_linear_mesh:
 
     def __init__(self, x, f):
         """
@@ -32,7 +32,7 @@ class simple_mesh:
         # eigensolutions to translation and rotation
         self.v = np.identity(3) / np.sqrt(self.surf_area)
         self.w = self.calc_rotation_vectors() # rows are the vectors
-   
+
 
     def calc_surf_area(self):
         """

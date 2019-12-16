@@ -18,7 +18,7 @@ def main1():
     mesh_name = sys.argv[1]
     (x_data, f2v, _params) = io.read_short_dat(mesh_name)
     f2v = f2v - 1 # indexing change
-    mesh = sm.simple_mesh(x_data, f2v)
+    mesh = sm.simple_linear_mesh(x_data, f2v)
     num_faces = mesh.faces.shape[0]
     v_in = sphere_eigen_func(mesh, 1.) # eigenfunction
     v_out = np.zeros((num_faces, 3))
@@ -65,7 +65,7 @@ def main2():
 
     (x_data, f2v, _params) = io.read_short_dat(mesh_name)
     f2v = f2v - 1 # indexing change
-    mesh = sm.simple_mesh(x_data, f2v)
+    mesh = sm.simple_linear_mesh(x_data, f2v)
     num_faces = mesh.faces.shape[0]
 
     t1 = time.time()

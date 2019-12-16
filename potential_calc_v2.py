@@ -6,35 +6,36 @@ import sys
 import math
 import time
 import numpy as np
-import simple_mesh as sm
+import simple_linear_mesh as sm
 import input_output as io
 import gauss_quad as gq
 import geometric as geo
 from geometric import shape_func_linear
 
 def main():
-    """
-    constant point singularity subtraction
-    """
-    if len(sys.argv) != 2:
-        print("Usage: mesh_name")
+    if len(sys.argv) != 4:
+        print("Usage: mesh name, constant or linear (c, l), output name")
         sys.exit()
     mesh_name = sys.argv[1]
+    const_or_linear = sys.argv[2]
+    assert const_or_linear in ('c', 'l')
+    out_name = sys.argv[3]
 
     t0 = time.time()
 
     (x_data, f2v, _params) = io.read_short_dat(mesh_name)
     f2v = f2v - 1 # indexing change
-    mesh = sm.simple_mesh(x_data, f2v)
-    num_faces = mesh.faces.shape[0]
+    mesh = sm.simple_linear_mesh(x_data, f2v)
 
-    v_in = off_diag_ros_field(mesh)
-    v_out = np.zeros((num_faces, 3))
+    v_in = off_diag_ros_field(mesh, const_or_linear)
 
     t1 = time.time()
     print("{}, before construct stiffness matrix".format(t1 - t0))
 
-    C = make_mat_linear(mesh) # stiffness matrix
+    if const_or_linear == 'c':
+        C = make_mat_const(mesh) # stiffness matrix
+    elif const_or_linear == 'l':
+        C = make_mat_linear(mesh) # stiffness matrix
     v_out = np.dot(C, v_in.flatten('C'))
     v_out = v_out.reshape(v_in.shape, order='C')
 
@@ -43,8 +44,8 @@ def main():
 
     w, _v = np.linalg.eig(C)
 
-    io.write_vel(v_in, v_out, "vel_ros.csv")
-    io.write_eig(w, "eig_ros.csv")
+    io.write_vel(v_in, v_out, "{}_vel.csv".format(out_name))
+    io.write_eig(w, "{}_eig.csv".format(out_name))
 
     t3 = time.time()
     print("{}, write out walltime".format(t3 - t2))
@@ -97,7 +98,7 @@ def make_mat_linear(mesh):
     num_faces = mesh.faces.shape[0]
     num_verts = mesh.vertices.shape[0]
     c_0 = 1. / (4. * math.pi)
-    C = np.zeros((3 * num_faces, 3 * num_faces))
+    C = np.zeros((3 * num_verts, 3 * num_verts))
 
     for src_num in range(num_verts): # source points
         src_pt = mesh.vertices[src_num]
@@ -139,24 +140,34 @@ def make_mat_linear(mesh):
     return C
 
 
-def off_diag_ros_field(mesh):
+def off_diag_ros_field(mesh, const_or_linear):
     """
     Off diagonal rate of strain field eigenfunction
     Returns velocites at each vertex in cartesional coordinates
     Note that this is already in cartesional coordinates
-    for constant potentials
 
     Parameters:
         mesh : simple mesh input
+        const_or_linear : if constant or linear density distributions
     """
     E = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
-    num_faces = mesh.faces.shape[0]
-    v_list = np.zeros((num_faces, 3))
-    for m in range(num_faces):
-        face = mesh.faces[m]
-        center = mesh.calc_tri_center(face)
-        v_list[m] = np.dot(E, center)
-    return v_list
+    if const_or_linear == 'c':
+        num_faces = mesh.faces.shape[0]
+        v_list = np.zeros((num_faces, 3))
+        for m in range(num_faces):
+            face = mesh.faces[m]
+            center = mesh.calc_tri_center(face)
+            v_list[m] = np.dot(E, center)
+        return v_list
+    elif const_or_linear == 'l':
+        num_vert = mesh.vertices.shape[0]
+        v_list = np.zeros((num_vert, 3))
+        for m in range(num_vert):
+            vert = mesh.vertices[m]
+            v_list[m] = np.dot(E, vert)
+        return v_list
+    else:
+        sys.exit("unknown const_or_linear value")
 
 
 def make_const_quad_func(x_0, n):

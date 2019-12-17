@@ -18,16 +18,16 @@ def ellip_cnst(dims, version):
     """
     assert len(dims) == 3
     i = get_start_ind(version)
-    cnst = dims[0] * dims[1] * dims[2]
-    return cnst * quad(ellip_integrand, 0, np.inf, args=(dims, i))[0]
+    abc = dims[0] * dims[1] * dims[2]
+    return abc * quad(ellip_integrand, 0., np.inf, args=(dims, i))[0]
 
 
 def ellip_integrand(t, dims, start_ind):
     """
-    Integrand for the ellipstical integral
+    Integrand for the elliptical integral
     """
-    delta_t = math.sqrt((dims[0]**2 * t) * (dims[1]**2 + t) * (dims[2]**2 + t))
-    return 1./((dims[start_ind]**2 + t) * delta_t)
+    delta_t = np.sqrt((dims[0]**2 + t) * (dims[1]**2 + t) * (dims[2]**2 + t))
+    return ((dims[start_ind]**2 + t) * delta_t)**(-1)
 
 
 def ellip_p_cnst(dims, version):
@@ -36,22 +36,51 @@ def ellip_p_cnst(dims, version):
     """
     assert len(dims) == 3
     i = get_start_ind(version)
-    types = ["alpha", "beta", "gamma"]
-    tmp0 = ellip_cnst(dims, types[(i + 2) % 3]) - ellip_cnst(dims, types[(i + 1) % 3])
-    tmp1 = dims[(i + 1) % 3]**2 - dims[(i + 2) % 3]**2
-    return tmp0 / tmp1
+    abc = dims[0] * dims[1] * dims[2]
+    return abc * quad(ellip_p_integrand, 0, np.inf, args=(dims, i))[0]
+
+
+def ellip_p_integrand(t, dims, i):
+    """
+    Integrand for the primed elliptical integral
+
+    Parameters:
+        t : dependent variable
+        dims : ellipsoidal dimensions
+        i : starting index for dimension (0 = a, 1 = b, 2 = c)
+    """
+    delta_t = np.sqrt((dims[0]**2 + t) * (dims[1]**2 + t) * (dims[2]**2 + t))
+    tmp = (
+        (dims[(i+2) % 3]**2 + t) *
+        (dims[(i+1) % 3]**2 + t) *
+        delta_t
+    )**(-1)
+    return tmp
 
 
 def ellip_pp_cnst(dims, version):
     assert len(dims) == 3
     i = get_start_ind(version)
-    types = ["alpha", "beta", "gamma"]
-    tmp0 = (
-        dims[(i+1) % 3]**2 * ellip_cnst(dims, types[(i+1) % 3]) -
-        dims[(i+2) % 3]**2 * ellip_cnst(dims, types[(i+2) % 3])
+    abc = dims[0] * dims[1] * dims[2]
+    return abc * quad(ellip_pp_integrand, 0, np.inf, args=(dims, i))[0]
+
+
+def ellip_pp_integrand(t, dims, i):
+    """
+    Integrand for the double prime elliptical integral
+
+    Parameters:
+        t : dependent variable
+        dims : ellipsoidal dimensions
+        i : starting index for dimension (0 = a, 1 = b, 2 = c)
+    """
+    delta_t = np.sqrt((dims[0]**2 + t) * (dims[1]**2 + t) * (dims[2]**2 + t))
+    tmp = t / (
+        (dims[(i+1) % 3]**2 + t) *
+        (dims[(i+2) % 3]**2 + t) *
+        delta_t
     )
-    tmp1 = dims[(i+1) % 3]**2 - dims[(i+2) % 3]**2
-    return tmp0 / tmp1
+    return tmp
 
 
 def get_start_ind(version):

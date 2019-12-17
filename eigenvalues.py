@@ -43,7 +43,7 @@ def lambda_31(dims):
     return (c**2 + a**2) * ellip_p_cnst(dims, "beta") - 1
 
 
-def kappa_pm(dims, p_m):
+def kappa_pm(p_m, dims):
     alpha_0_pp = ellip_pp_cnst(dims, "alpha")
     beta_0_pp = ellip_pp_cnst(dims, "beta")
     gamma_0_pp = ellip_pp_cnst(dims, "gamma")
@@ -65,4 +65,4 @@ def lambda_p(p_m, dims):
     returns:
         float, the eigenvalue
     """
-    return (1. + kappa_pm(dims, p_m)) / (1. - kappa_pm(dims, p_m))
+    return (1. + kappa_pm(p_m, dims)) / (1. - kappa_pm(p_m, dims))

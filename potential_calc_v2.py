@@ -5,12 +5,14 @@ To check if the method we are employing makes sense.
 import sys
 import math
 import time
+import ast
 import numpy as np
-import simple_linear_mesh as sm
+import simple_linear_mesh as slm
 import input_output as io
 import gauss_quad as gq
 import geometric as geo
 from geometric import shape_func_linear
+import eigenfunctions as efun
 
 def main():
     if len(sys.argv) != 4:
@@ -25,9 +27,9 @@ def main():
 
     (x_data, f2v, _params) = io.read_short_dat(mesh_name)
     f2v = f2v - 1 # indexing change
-    mesh = sm.simple_linear_mesh(x_data, f2v)
-
-    v_in = off_diag_ros_field(mesh, const_or_linear)
+    mesh = slm.simple_linear_mesh(x_data, f2v)
+    mesh.dims = ast.literal_eval(input("ellipsoid dimensions (a, b, c): "))
+    v_in = efun.E_23(mesh, const_or_linear)
 
     t1 = time.time()
     print("{}, before construct stiffness matrix".format(t1 - t0))

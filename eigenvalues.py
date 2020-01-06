@@ -56,7 +56,7 @@ def kappa_pm(p_m, dims):
         return tmp0 - tmp1
 
 
-def lambda_p(p_m, dims):
+def lambda_pm(p_m, dims):
     """
     'plus or minus' eigenvalue for diagonal rate-of-strain field
 

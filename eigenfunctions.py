@@ -3,6 +3,8 @@ Eigenfunctions for the ellipsoidal particle
 """
 
 import numpy as np
+from scipy.linalg import null_space
+import eigenvalues as ev
 
 def make_vels(E_d, E_c, mesh, const_or_linear):
     """
@@ -83,6 +85,26 @@ def uni_z(mesh, const_or_linear):
 
 def hyper_xy(mesh, const_or_linear):
     E_d = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]])
+    E_c = np.array([0, 0, 0])
+    return make_vels(E_d, E_c, mesh, const_or_linear)
+
+
+def diag_eigvec(pm, mesh, const_or_linear):
+    dims = mesh.dims
+    kapp = ev.kappa_pm(pm, dims)
+    alpha_pp_0 = ev.ellip_pp_cnst(dims, "alpha")
+    beta_pp_0 = ev.ellip_pp_cnst(dims, "beta")
+    gamma_pp_0 = ev.ellip_pp_cnst(dims, "gamma")
+    d = beta_pp_0 * gamma_pp_0 + gamma_pp_0 * alpha_pp_0 + alpha_pp_0 * beta_pp_0
+    A = np.array(
+        [
+            [(kapp - 1) + (4*alpha_pp_0)/(3*d), -(2*beta_pp_0)/(3*d), -(2*gamma_pp_0)/(3 * d)],
+            [-(2*alpha_pp_0)/(3*d), (kapp - 1) + (4*beta_pp_0)/(3*d), -(2*gamma_pp_0)/(3*d)],
+            [1., 1., 1.]
+        ]
+    )
+    e = null_space(A)
+    E_d = np.array([[e[0], 0, 0], [0, e[1], 0], [0, 0, e[2]]])
     E_c = np.array([0, 0, 0])
     return make_vels(E_d, E_c, mesh, const_or_linear)
 

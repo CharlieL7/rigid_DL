@@ -3,7 +3,7 @@ from elliptic_integrals import *
 from scipy.integrate import quad
 from scipy.linalg import null_space
 import numpy as np
-dims = (2, 2, 1)
+dims = (3, 2, 1)
 kapp = kappa_pm("+", dims)
 alpha_pp_0 = ellip_pp_cnst(dims, "alpha")
 beta_pp_0 = ellip_pp_cnst(dims, "beta")
@@ -16,5 +16,6 @@ A = np.array(
             [1., 1., 1.]
         ]
 )
-print(A)
 print(null_space(A))
+print(lambda_pm("+", dims))
+print(lambda_23(dims))

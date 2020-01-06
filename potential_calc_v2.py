@@ -29,7 +29,7 @@ def main():
     f2v = f2v - 1 # indexing change
     mesh = slm.simple_linear_mesh(x_data, f2v)
     mesh.dims = ast.literal_eval(input("ellipsoid dimensions (a, b, c): "))
-    v_in = efun.E_23(mesh, const_or_linear)
+    v_in = efun.diag_eigvec("-", mesh, const_or_linear)
 
     t1 = time.time()
     print("{}, before construct stiffness matrix".format(t1 - t0))

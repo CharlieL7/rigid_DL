@@ -217,7 +217,7 @@ def write_vel(v_in, v_out, out_name):
         writer.writerows(v_out)
 
 
-def write_eig(w, out_name):
+def write_eigval(w, out_name):
     """
     Writes eigenvalues of kernel to file
 
@@ -231,3 +231,20 @@ def write_eig(w, out_name):
         out.write("eigenvalues\n")
         for a in w.real:
             out.write("{}\n".format(a))
+
+
+def write_eigvec(v, out_name):
+    """
+    Writes eigenvectors of kernel to file
+
+     Parameters:
+        v : eigenvectors
+        out_name : string of the filename you want for the new file
+     Returns:
+         None
+    """
+    with open(out_name, 'w') as out:
+        out.write("eigenvectors\n")
+        writer = csv.writer(out, delimiter=',', lineterminator="\n")
+        for vec in v[:,]:
+            writer.writerow(np.real(vec))

@@ -29,7 +29,7 @@ class simple_linear_mesh:
         self.center_mesh()
         self.centroid = self.calc_mesh_centroid()
         self.mom_inertia = self.calc_moment_inertia_tensor()
-        self.dims = (0., 0., 0.)
+        self.dims = self.calc_ellip_dims()
 
         # eigensolutions to translation and rotation
         self.v = np.identity(3) / np.sqrt(self.surf_area)
@@ -209,6 +209,34 @@ class simple_linear_mesh:
         """
         old_centroid = self.calc_mesh_centroid()
         self.vertices -= old_centroid
+
+
+    def calc_ellip_dims(self):
+        """
+        Rotate the mesh by eigenvectors of the moment of inertia tensor and then get the lengths
+        along each axis
+        """
+
+        [eigvals, eigvecs] = np.linalg.eig(self.mom_inertia)
+        idx = eigvals.argsort()
+        eigvals = eigvals[idx]
+        eigvecs = eigvecs[:, idx]
+
+        # first vector positive x
+        if eigvecs[0, 0] < 0:
+            eigvecs[:, 0] = -eigvecs[:, 0]
+
+        # making sure right-handed
+        temp = np.cross(eigvecs[:, 0], eigvecs[:, 1])
+        if np.dot(temp.T, eigvecs[:, 2]) < 0:
+            eigvecs[:, 2] = -eigvecs[:, 2]
+
+        x_rot = np.matmul(self.vertices, eigvecs)
+        a = np.amax(x_rot[:, 0]) - np.amin(x_rot[:, 0])
+        b = np.amax(x_rot[:, 1]) - np.amin(x_rot[:, 1])
+        c = np.amax(x_rot[:, 2]) - np.amin(x_rot[:, 2])
+        return (a, b, c)
+
 
 
     def check_in_face(self, vert_num, face_num):

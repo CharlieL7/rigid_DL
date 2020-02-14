@@ -28,8 +28,10 @@ def main():
     (x_data, f2v, _params) = io.read_short_dat(mesh_name)
     f2v = f2v - 1 # indexing change
     mesh = slm.simple_linear_mesh(x_data, f2v)
-    mesh.dims = ast.literal_eval(input("ellipsoid dimensions (a, b, c): "))
-    v_in = efun.diag_eigvec("-", mesh, const_or_linear)
+    #v_in = efun.diag_eigvec("-", mesh, const_or_linear)
+    v_cnst = np.array([1, 0, 0])
+    v_trans_in = efun.make_translation_vels(v_cnst, mesh, const_or_linear)
+    v_12_in = efun.E_12(mesh, const_or_linear)
 
     t1 = time.time()
     print("{}, before construct stiffness matrix".format(t1 - t0))
@@ -38,16 +40,20 @@ def main():
         C = make_mat_const(mesh) # stiffness matrix
     elif const_or_linear == 'l':
         C = make_mat_linear(mesh) # stiffness matrix
-    v_out = np.dot(C, v_in.flatten('C'))
-    v_out = v_out.reshape(v_in.shape, order='C')
+
+    v_trans_out = np.dot(C, v_trans_in.flatten('C'))
+    v_trans_out = v_trans_out.reshape(v_trans_in.shape, order='C')
+    v_12_out = np.dot(C, v_12_in.flatten('C'))
+    v_12_out = v_12_out.reshape(v_12_in.shape, order='C')
 
     t2 = time.time()
     print("{}, matrix forming and dotting walltime".format(t2 - t1))
 
-    w, _v = np.linalg.eig(C)
-
-    io.write_vel(v_in, v_out, "{}_vel.csv".format(out_name))
-    io.write_eig(w, "{}_eig.csv".format(out_name))
+    #w, v = np.linalg.eig(C)
+    #io.write_eigval(w, "{}_eigval.csv".format(out_name))
+    #io.write_eigvec(v, "{}_eigvec.csv".format(out_name))
+    io.write_vel(v_trans_in, v_trans_out, "{}_trans_vel.csv".format(out_name))
+    io.write_vel(v_12_in, v_12_out, "{}_12_vel.csv".format(out_name))
 
     t3 = time.time()
     print("{}, write out walltime".format(t3 - t2))
@@ -90,7 +96,7 @@ def make_mat_const(mesh):
 def make_mat_linear(mesh):
     """
     Makes the stiffness matrix using point singularity subtraction.
-    For constant elements.
+    For linear elements.
 
     Parameters:
         mesh : simple mesh input

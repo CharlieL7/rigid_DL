@@ -6,7 +6,7 @@ import numpy as np
 from scipy.linalg import null_space
 import eigenvalues as ev
 
-def make_vels(E_d, E_c, mesh, const_or_linear):
+def make_linear_vels(E_d, E_c, mesh, const_or_linear):
     """
     Makes the velocitiy field from the rate of strain field
 Parameters:
@@ -14,7 +14,7 @@ Parameters:
         E_c : the rate of strain field crossed with position
         mesh : simple mesh input
         const_or_linear : if constant or linear density distributions
-    Returns;
+    Returns:
         v_list : velocities at each element or node
     """
     if const_or_linear == 'c':
@@ -34,6 +34,31 @@ Parameters:
         return v_list
 
 
+def make_translation_vels(v_cnst, mesh, const_or_linear):
+    """
+    Makes the rigid body motion velocity field
+Parameters:
+        v_cnst : the velocity at each point
+        mesh : simple mesh input
+        const_or_linear : if constant or linear density distributions
+    Returns:
+        v_list : velocities at each element or node
+    """
+    if const_or_linear == 'c':
+        num_faces = mesh.faces.shape[0]
+        v_list = np.zeros((num_faces, 3))
+        for m in range(num_faces):
+            face = mesh.faces[m]
+            v_list[m] = v_cnst
+        return v_list
+    else:
+        num_vert = mesh.vertices.shape[0]
+        v_list = np.zeros((num_vert, 3))
+        for m in range(num_vert):
+            v_list[m] = v_cnst
+        return v_list
+
+
 def E_12(mesh, const_or_linear):
     """
     Off diagonal (12) rate of strain field eigenfunction
@@ -48,45 +73,45 @@ def E_12(mesh, const_or_linear):
     E_d = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
     a, b, _c = mesh.dims
     E_c = (a**2 - b**2)/(a**2 + b**2) * E_d[0, 1] * np.array([0, 0, 1])
-    return make_vels(E_d, E_c, mesh, const_or_linear)
+    return make_linear_vels(E_d, E_c, mesh, const_or_linear)
 
 
 def E_13(mesh, const_or_linear):
     E_d = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
     a, _b, c = mesh.dims
     E_c = (c**2 - a**2)/(c**2 + a**2) * E_d[0, 2] * np.array([0, 1, 0])
-    return make_vels(E_d, E_c, mesh, const_or_linear)
+    return make_linear_vels(E_d, E_c, mesh, const_or_linear)
 
 
 def E_23(mesh, const_or_linear):
     E_d = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
     _a, b, c = mesh.dims
     E_c = (b**2 - c**2)/(b**2 + c**2) * E_d[1, 2] * np.array([1, 0, 0])
-    return make_vels(E_d, E_c, mesh, const_or_linear)
+    return make_linear_vels(E_d, E_c, mesh, const_or_linear)
 
 
 def uni_x(mesh, const_or_linear):
     E_d = np.array([[2, 0, 0], [0, -1, 0], [0, 0, -1]])
     E_c = np.array([0, 0, 0])
-    return make_vels(E_d, E_c, mesh, const_or_linear)
+    return make_linear_vels(E_d, E_c, mesh, const_or_linear)
 
 
 def hyper_yz(mesh, const_or_linear):
     E_d = np.array([[0, 0, 0], [0, 1, 0], [0, 0, -1]])
     E_c = np.array([0, 0, 0])
-    return make_vels(E_d, E_c, mesh, const_or_linear)
+    return make_linear_vels(E_d, E_c, mesh, const_or_linear)
 
 
 def uni_z(mesh, const_or_linear):
     E_d = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 2]])
     E_c = np.array([0, 0, 0])
-    return make_vels(E_d, E_c, mesh, const_or_linear)
+    return make_linear_vels(E_d, E_c, mesh, const_or_linear)
 
 
 def hyper_xy(mesh, const_or_linear):
     E_d = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]])
     E_c = np.array([0, 0, 0])
-    return make_vels(E_d, E_c, mesh, const_or_linear)
+    return make_linear_vels(E_d, E_c, mesh, const_or_linear)
 
 
 def diag_eigvec(pm, mesh, const_or_linear):
@@ -106,7 +131,7 @@ def diag_eigvec(pm, mesh, const_or_linear):
     e = null_space(A)
     E_d = np.array([[e[0], 0, 0], [0, e[1], 0], [0, 0, e[2]]])
     E_c = np.array([0, 0, 0])
-    return make_vels(E_d, E_c, mesh, const_or_linear)
+    return make_linear_vels(E_d, E_c, mesh, const_or_linear)
 
 
 def calc_ROS_eigs(field, dims):

@@ -17,5 +17,4 @@ A = np.array(
         ]
 )
 print(null_space(A))
-print(lambda_pm("+", dims))
-print(lambda_23(dims))
+print(lambda_pm("-", dims))

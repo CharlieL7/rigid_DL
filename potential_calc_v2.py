@@ -5,7 +5,6 @@ To check if the method we are employing makes sense.
 import sys
 import math
 import time
-import ast
 import numpy as np
 import simple_linear_mesh as slm
 import input_output as io

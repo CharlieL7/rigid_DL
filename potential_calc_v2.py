@@ -10,7 +10,6 @@ import simple_linear_mesh as slm
 import input_output as io
 import gauss_quad as gq
 import geometric as geo
-from geometric import shape_func_linear
 import eigenfunctions as efun
 
 def main():
@@ -195,13 +194,13 @@ def make_reg_linear_quad_func(x_0, n, node_num):
     Parameters:
         x_0: source point
         n: normal vector
-        num: which shape function
+        node_num: which shape function
     """
     def quad_func(eta, xi, nodes):
         x = geo.pos(eta, xi, nodes)
         S = geo.stresslet(x, x_0, n)
-        phi = shape_func_linear(eta, xi, node_num)
-        return np.dot(phi, S)
+        phi = geo.shape_func_linear(eta, xi, node_num)
+        return phi * S
     return quad_func
 
 
@@ -219,7 +218,7 @@ def make_sing_linear_quad_func(x_0, n, node_num, singular_ind):
         x = geo.pos(eta, xi, nodes)
         x_hat = x - x_0
         r = np.linalg.norm(x_hat)
-        phi = shape_func_linear(eta, xi, node_num)
+        phi = geo.shape_func_linear(eta, xi, node_num)
         # shape function for source point is [1, 0, 0], [0, 1, 0], or [0, 0, 1]
         if node_num == singular_ind:
             if (phi - 1) == 0: # getting around division by 0

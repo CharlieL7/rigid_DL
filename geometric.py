@@ -19,7 +19,8 @@ def pos(eta, xi, nodes):
 
 def stresslet(x, x_0, n):
     """
-    Stress tensor Green's function dotted with the normal vector.
+    Green's function associated with stress tensor of point force or flow from a point source.
+    Dotted with the normal vector.
     T_ijk @ n_k
     Parameters:
         x : field point, (3,) ndarray

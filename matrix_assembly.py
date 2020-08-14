@@ -135,20 +135,20 @@ def make_quad_func(x_0, n):
     """
     Throwaway function for interfacing
     """
-    def quad_func(eta, xi, nodes):
-        x = pos(eta, xi, nodes)
+    def quad_func(xi, eta, nodes):
+        x = pos(xi, eta, nodes)
         return stresslet(x, x_0, n)
     return quad_func
 
 
 def make_rot_func(w, centroid)
-    def quad_func(eta, xi, nodes):
-        x = pos(eta, xi, nodes)
+    def quad_func(xi, eta, nodes):
+        x = pos(xi, eta, nodes)
         return np.cross(w, x - centroid)
     return quad_func
 
 
-def const_quad_func(eta, xi, nodes):
+def const_quad_func(xi, eta, nodes):
     """
     Throwaway function that just returns 1
     """

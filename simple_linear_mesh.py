@@ -6,7 +6,7 @@ Has functions to calculate properties on the mesh.
 import csv
 import sys
 import numpy as np
-import geometric as gm
+import geometric as geo
 import gauss_quad as gq
 
 class simple_linear_mesh:
@@ -97,7 +97,7 @@ class simple_linear_mesh:
         s_a = 0.0
         for f in self.faces: # get rows
             nodes = self.get_nodes(f)
-            s_a += gq.int_over_tri(gm.const_func, nodes)
+            s_a += gq.int_over_tri_linear(geo.const_func, nodes)
         return s_a
 
 
@@ -113,7 +113,7 @@ class simple_linear_mesh:
         x_c = np.zeros(3)
         for f in self.faces:
             nodes = self.get_nodes(f)
-            x_c += gq.int_over_tri(gm.pos, nodes)
+            x_c += gq.int_over_tri_linear(geo.pos_linear, nodes)
         x_c /= self.surf_area
         return x_c
 
@@ -132,7 +132,7 @@ class simple_linear_mesh:
         inertia_tensor = np.zeros((3, 3))
         for f in self.faces:
             nodes = self.get_nodes(f)
-            inertia_tensor += gq.int_over_tri(gm.inertia_func, nodes)
+            inertia_tensor += gq.int_over_tri_linear(geo.inertia_func_linear, nodes)
 
         inertia_tensor /= self.surf_area
         return inertia_tensor
@@ -161,13 +161,12 @@ class simple_linear_mesh:
         Paramters:
             face : the face to get nodes for, (3,) list-like integers
         Returns:
-            nodes : (3, 3) ndarray of nodes as rows
-                    note that numpy doesn't distinguish between rows and columns for "1D" arrays
+            nodes : (3, 3) ndarray of nodes as columns
         """
         x_0 = self.vertices[face[0]]
         x_1 = self.vertices[face[1]]
         x_2 = self.vertices[face[2]]
-        nodes = np.stack((x_0, x_1, x_2), axis=0)
+        nodes = np.stack((x_0, x_1, x_2), axis=1)
         return nodes
 
 
@@ -181,7 +180,7 @@ class simple_linear_mesh:
             n : normalized normal vector, (3, ) ndarray
         """
         nodes = self.get_nodes(face)
-        n = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
+        n = np.cross(nodes[:, 1] - nodes[:, 0], nodes[:, 2] - nodes[:, 0])
         # make outwards pointing
         x_c2tri = self.calc_tri_center(face) - self.centroid
         if np.dot(n, x_c2tri) < 0.:
@@ -199,7 +198,7 @@ class simple_linear_mesh:
             tri_c : (3, ) ndarray for triangle center
         """
         nodes = self.get_nodes(face)
-        tri_c = (1./3.) * (nodes[0] + nodes[1] + nodes[2])
+        tri_c = (1./3.) * np.sum(nodes, axis=1)
         return tri_c
 
 

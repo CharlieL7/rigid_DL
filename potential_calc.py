@@ -35,9 +35,9 @@ def main():
     print("{}, before construct stiffness matrix".format(t1 - t0))
 
     if const_or_linear == 'c':
-        C = make_mat_const(mesh) # stiffness matrix
+        C = make_mat_cp_le(mesh) # stiffness matrix
     elif const_or_linear == 'l':
-        C = make_mat_linear(mesh) # stiffness matrix
+        C = make_mat_lp_le(mesh) # stiffness matrix
 
     v_trans_out = np.dot(C, v_trans_in.flatten('C'))
     v_trans_out = v_trans_out.reshape(v_trans_in.shape, order='C')
@@ -57,13 +57,13 @@ def main():
     print("{}, write out walltime".format(t3 - t2))
 
 
-def make_mat_const(mesh):
+def make_mat_cp_le(mesh):
     """
     Makes the stiffness matrix using point singularity subtraction.
-    For constant elements.
+    For constant potentials over a linear elements.
 
     Parameters:
-        mesh : simple mesh input
+        mesh : simple linear mesh input
     Returns:
         the stresslet matrix
     """
@@ -76,8 +76,8 @@ def make_mat_const(mesh):
             field_nodes = mesh.get_nodes(mesh.faces[face_num])
             field_normal = mesh.calc_normal(mesh.faces[face_num])
             if face_num != src_num:
-                sub_mat = gq.int_over_tri(
-                    make_const_quad_func(src_center, field_normal),
+                sub_mat = gq.int_over_tri_linear(
+                    make_cp_le_quad_func(src_center, field_normal),
                     field_nodes
                 )
                 C[(3 * src_num):(3 * src_num + 3),
@@ -91,13 +91,13 @@ def make_mat_const(mesh):
     return C
 
 
-def make_mat_linear(mesh):
+def make_mat_lp_le(mesh):
     """
     Makes the stiffness matrix using point singularity subtraction.
-    For linear elements.
+    For linear potentials over a linear elements.
 
     Parameters:
-        mesh : simple mesh input
+        mesh : simple linear mesh input
     Returns:
         the stresslet matrix
     """
@@ -115,8 +115,8 @@ def make_mat_linear(mesh):
 
             if is_singular: # singular triangle
                 for node_num in range(3):
-                    sub_mat = gq.int_over_tri(
-                        make_sing_linear_quad_func(
+                    sub_mat = gq.int_over_tri_linear(
+                        make_sing_lp_le_quad_func(
                             src_pt, field_normal, node_num, local_singular_ind
                             ),
                         field_nodes
@@ -127,14 +127,14 @@ def make_mat_linear(mesh):
             else: # regular triangle
                 for node_num in range(3):
                     node_global_num = mesh.faces[face_num, node_num] # global index for vert
-                    sub_mat = gq.int_over_tri(
-                        make_reg_linear_quad_func(src_pt, field_normal, node_num),
+                    sub_mat = gq.int_over_tri_linear(
+                        make_reg_lp_le_quad_func(src_pt, field_normal, node_num),
                         field_nodes
                     )
                     C[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
                 # subtracting the q(x_0) term
-                sub_mat = gq.int_over_tri(make_const_quad_func(src_pt, field_normal), field_nodes)
+                sub_mat = gq.int_over_tri_linear(make_cp_le_quad_func(src_pt, field_normal), field_nodes)
                 C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
 
         # whole surface q(x_0) term
@@ -144,6 +144,32 @@ def make_mat_linear(mesh):
 
     C = np.dot(c_0, C)
     return C
+
+
+def make_mat_cp_qe(mesh):
+    """
+    Makes the stiffness matrix using point singularity subtraction.
+    For constant potentials over quadratic elements.
+
+    Parameters:
+        mesh : simple quadratic mesh input
+    Returns:
+        the stresslet matrix
+    """
+    #TODO
+
+
+def make_mat_lp_qe(mesh):
+    """
+    Makes the stiffness matrix using point singularity subtraction.
+    For linear potentials over quadratic elements.
+
+    Parameters:
+        mesh : simple quadratic mesh input
+    Returns:
+        the stresslet matrix
+    """
+    #TODO
 
 
 def off_diag_ros_field(mesh, const_or_linear):
@@ -176,37 +202,38 @@ def off_diag_ros_field(mesh, const_or_linear):
         sys.exit("unknown const_or_linear value")
 
 
-def make_const_quad_func(x_0, n):
+def make_cp_le_quad_func(x_0, n):
     """
     Makes the constant potential function that is integrated for the stiffness matrix
     """
-    def quad_func(eta, xi, nodes):
-        x = geo.pos(eta, xi, nodes)
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_linear(xi, eta, nodes)
         return geo.stresslet(x, x_0, n)
     return quad_func
 
 
-def make_reg_linear_quad_func(x_0, n, node_num):
+def make_reg_lp_le_quad_func(x_0, n, node_num):
     """
-    Makes the regular (non-singular) linear potential function that is
-    integrated for the stiffness matrix
+    Makes the regular (non-singular) linear potential, linear element function
+    that is integrated for the stiffness matrix
 
     Parameters:
         x_0: source point
         n: normal vector
         node_num: which shape function
     """
-    def quad_func(eta, xi, nodes):
-        x = geo.pos(eta, xi, nodes)
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_linear(xi, eta, nodes)
         S = geo.stresslet(x, x_0, n)
-        phi = geo.shape_func_linear(eta, xi, node_num)
+        phi = geo.shape_func_linear(xi, eta, node_num)
         return phi * S
     return quad_func
 
 
-def make_sing_linear_quad_func(x_0, n, node_num, singular_ind):
+def make_sing_lp_le_quad_func(x_0, n, node_num, singular_ind):
     """
-    Makes the sinuglar linear potential function that is integrated for the stiffness matrix
+    Makes the sinuglar linear potential, linear element function
+    that is integrated for the stiffness matrix
 
     Parameters:
         x_0: source point
@@ -214,11 +241,11 @@ def make_sing_linear_quad_func(x_0, n, node_num, singular_ind):
         node_num: which shape function
         singular_ind: local singular index for a face
     """
-    def quad_func(eta, xi, nodes):
-        x = geo.pos(eta, xi, nodes)
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_linear(xi, eta, nodes)
         x_hat = x - x_0
         r = np.linalg.norm(x_hat)
-        phi = geo.shape_func_linear(eta, xi, node_num)
+        phi = geo.shape_func_linear(xi, eta, node_num)
         # shape function for source point is [1, 0, 0], [0, 1, 0], or [0, 0, 1]
         if node_num == singular_ind:
             if (phi - 1) == 0: # getting around division by 0

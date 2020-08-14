@@ -61,25 +61,25 @@ def make_coeff_stresslet(x_ele, n_ele, v_ele, f_ele, visc_rat):
         visc_rat : viscosity ratio of vesicle
     Returns:
         quad_func : function to input into
-        gaussian quadrature func(eta, xi)
+        gaussian quadrature func(xi, eta)
     """
 
-    def quad_func(eta, xi):
+    def quad_func(xi, eta):
         f_x_0 = np.outer(f_ele[0], x_ele[0])
         f_x_1 = np.outer(f_ele[1], x_ele[1])
         f_x_2 = np.outer(f_ele[2], x_ele[2])
         A = ( # first term in coeff
-            (1. - eta - xi) * f_x_0 +
-            eta * f_x_1 +
-            xi * f_x_2
+            (1. - xi - eta) * f_x_0 +
+            xi * f_x_1 +
+            eta * f_x_2
         )
         vn_0 = np.outer(v_ele[0], n_ele)
         vn_1 = np.outer(v_ele[1], n_ele)
         vn_2 = np.outer(v_ele[2], n_ele)
         B = ( # second term in coeff
-            (1. - eta - xi) * (vn_0 + np.transpose(vn_0)) +
-            (eta) * (vn_1 + np.transpose(vn_1)) +
-            (xi) * (vn_2 + np.transpose(vn_2))
+            (1. - xi - eta) * (vn_0 + np.transpose(vn_0)) +
+            (xi) * (vn_1 + np.transpose(vn_1)) +
+            (eta) * (vn_2 + np.transpose(vn_2))
         )
         return A - (1. - visc_rat) * B
 

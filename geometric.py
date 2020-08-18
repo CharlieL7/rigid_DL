@@ -100,12 +100,12 @@ def calc_abg(nodes):
     Returns:
         (alpha, beta, gamma) : tuple of floats
     """
-    alpha = 1. / (1. + np.linalg.norm(nodes[3] - nodes[1]) /
-                  np.linalg.norm(nodes[3] - nodes[0]))
-    beta = 1. / (1. + np.linalg.norm(nodes[5] - nodes[2]) /
-                 np.linalg.norm(nodes[5] - nodes[0]))
-    gamma = 1. / (1. + np.linalg.norm(nodes[4] - nodes[1]) /
-                  np.linalg.norm(nodes[4] - nodes[2]))
+    alpha = 1. / (1. + np.linalg.norm(nodes[:, 3] - nodes[:,  1]) /
+            np.linalg.norm(nodes[:,  3] - nodes[:,  0]))
+    beta = 1. / (1. + np.linalg.norm(nodes[:,  5] - nodes[:,  2]) /
+            np.linalg.norm(nodes[:,  5] - nodes[:,  0]))
+    gamma = 1. / (1. + np.linalg.norm(nodes[:,  4] - nodes[:,  1]) /
+            np.linalg.norm(nodes[:,  4] - nodes[:,  2]))
     return (alpha, beta, gamma)
 
 

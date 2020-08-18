@@ -31,7 +31,7 @@ def int_over_tri_linear(func, nodes):
     f = []
     for xi, eta in para_pts:
         f.append(func(xi, eta, nodes))
-    f = np.array(f)
+    f = np.transpose(np.array(f)) # make (3,7)
 
     # metric function for surface area
     n = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
@@ -73,6 +73,7 @@ def int_over_tri_quadratic(func, nodes):
         h_s = np.linalg.norm(np.cross(e_xi, e_eta))
         f.append(func(xi, eta, nodes) * h_s)
     f = np.array(f)
+    f = np.transpose(np.array(f)) # make (3,7)
 
     ret = 0.5 * h_s * np.dot(f, w)
     return ret

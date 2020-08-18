@@ -170,34 +170,32 @@ class simple_linear_mesh:
         return nodes
 
 
-    def calc_normal(self, face):
+    def calc_normal(self, nodes):
         """
         Calculates the normal vector for a face
 
         Paramters:
-            face : the face to get normal vector for, (3, ) list-like
+            nodes : three nodes of triangle as columns in 3x3 ndarray
         Returns:
             n : normalized normal vector, (3, ) ndarray
         """
-        nodes = self.get_nodes(face)
         n = np.cross(nodes[:, 1] - nodes[:, 0], nodes[:, 2] - nodes[:, 0])
         # make outwards pointing
-        x_c2tri = self.calc_tri_center(face) - self.centroid
+        x_c2tri = self.calc_tri_center(nodes) - self.centroid
         if np.dot(n, x_c2tri) < 0.:
             n = -n
         return n / np.linalg.norm(n)
 
 
-    def calc_tri_center(self, face):
+    def calc_tri_center(self, nodes):
         """
         Calculates the centroid point on a face
 
         Parameters:
-            face : the face to get triangle center for, (3, ) list-like
+            nodes : three nodes of triangle as columns in 3x3 ndarray
         Returns:
             tri_c : (3, ) ndarray for triangle center
         """
-        nodes = self.get_nodes(face)
         tri_c = (1./3.) * np.sum(nodes, axis=1)
         return tri_c
 

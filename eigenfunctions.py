@@ -22,7 +22,8 @@ Parameters:
         v_list = np.zeros((num_faces, 3))
         for m in range(num_faces):
             face = mesh.faces[m]
-            center = mesh.calc_tri_center(face)
+            nodes = mesh.get_nodes(face)
+            center = mesh.calc_tri_center(nodes)
             v_list[m] = np.dot(E_d, center) - np.cross(E_c, center)
         return v_list
     else:

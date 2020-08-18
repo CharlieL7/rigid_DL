@@ -18,6 +18,7 @@ class simple_quad_mesh:
             x : vertices in list-like object (N, 3)
             f : list-like with indices to vertices of a triangle
                 expecting 6 node curved triangles (N, 3)
+                Indicies 0, 1, 2 should be the triangle vertices
         """
         self.vertices = np.array(x) # (N, 3) ndarray
         self.faces = np.array(f) # (N, 3) ndarray
@@ -115,31 +116,40 @@ class simple_quad_mesh:
         return nodes
 
 
-    def normal_func(self, face):
+    def normal_func(self, xi, eta, nodes):
         """
-        Returns the normal function of the face as n(xi, eta)
+        Normal function of the face
 
         Paramters:
-            face : the face to get normal vector for, (3, ) list-like
+            xi : first parametric variable
+            eta : second parameteric variable
+            nodes : six nodes of triangle as columns in 3x6 ndarray
         Returns:
-            n(xi, eta) : normal function, n(xi, eta) returns a vector
+            n : normal vector (3,) ndarray
         """
-        nodes = self.get_nodes(face)
-        #TODO
+        e_xi = np.matmul(nodes, geo.dphi_dxi_quadratic(xi, eta, nodes))
+        e_eta = np.matmul(nodes, geo.dphi_deta_quadratic(xi, eta, nodes))
+        n = np.cross(e_xi, e_eta)
+
+        pt2tri = self.calc_tri_center(nodes) - self.centroid
+        if np.dot(n, pt2tri) < 0.:
+            n = -n
+
+        n /= np.linalg.norm(n)
+        return n
 
 
-    def calc_point_on_face(self, face):
+    def calc_tri_center(self, nodes):
         """
-        Gets a point on the face surface.
+        Gets the center point on the face surface.
 
         Parameters:
-            face : the face to get a point for, (3, ) list-like
+            nodes : six nodes of triangle as columns in 3x6 ndarray
         Returns:
             tri_c : (3, ) ndarray for triangle center
         """
-        nodes = self.get_nodes(face)
         pt = geo.pos_quadratic(1./3., 1./3., nodes)
-        return tri_c
+        return pt
 
 
     def center_mesh(self):

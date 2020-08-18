@@ -35,7 +35,7 @@ def main():
     print("{}, before construct stiffness matrix".format(t1 - t0))
 
     if const_or_linear == 'c':
-        C = make_mat_cp_le(mesh) # stiffness matrix
+        C = make_mat_cp_le_f2s(mesh) # stiffness matrix
     elif const_or_linear == 'l':
         C = make_mat_lp_le(mesh) # stiffness matrix
 
@@ -78,6 +78,43 @@ def make_mat_cp_le(lin_mesh):
                 sub_mat = gq.int_over_tri_linear(
                     make_cp_le_quad_func(lin_mesh, src_center),
                     face_nodes
+                )
+                C[(3 * src_num):(3 * src_num + 3),
+                  (3 * face_num):(3 * face_num + 3)] += sub_mat
+                C[(3 * src_num):(3 * src_num + 3),
+                  (3 * src_num):(3 * src_num + 3)] -= sub_mat
+            # do nothing face_num == src_num, how it works out for constant elements
+        C[(3 * src_num):(3 * src_num + 3),
+          (3 * src_num):(3 * src_num + 3)] -= 4. * math.pi * np.identity(3)
+    C = np.dot(c_0, C)
+    return C
+
+
+def make_mat_cp_le_f2s(lin_mesh):
+    """
+    Makes the stiffness matrix using closed surface singularity subtraction.
+    For constant potentials over a linear elements.
+    Faces loop over source points loop.
+
+    Parameters:
+        lin_mesh : simple linear mesh input
+    Returns:
+        the stresslet matrix
+    """
+    num_faces = lin_mesh.faces.shape[0]
+    c_0 = 1. / (4. * math.pi)
+    C = np.zeros((3 * num_faces, 3 * num_faces))
+    for face_num in range(num_faces):
+        face_nodes = lin_mesh.get_nodes(lin_mesh.faces[face_num])
+        face_n = np.cross(face_nodes[1] - face_nodes[0], face_nodes[2] - face_nodes[0])
+        face_h_s = np.linalg.norm(face_n)
+        face_unit_n = face_n / face_h_s
+        for src_num in range(num_faces):
+            src_center = lin_mesh.calc_tri_center(lin_mesh.get_nodes(lin_mesh.faces[src_num]))
+            if face_num != src_num:
+                sub_mat = gq.int_over_tri_linear_f2s(
+                    make_cp_le_quad_func_f2s(face_unit_n, src_center),
+                    face_nodes, face_h_s
                 )
                 C[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
@@ -274,6 +311,22 @@ def make_cp_le_quad_func(lin_mesh, x_0):
     def quad_func(xi, eta, nodes):
         x = geo.pos_linear(xi, eta, nodes)
         n = lin_mesh.calc_normal(nodes)
+        return geo.stresslet(x, x_0, n)
+    return quad_func
+
+
+def make_cp_le_quad_func_f2s(n, x_0):
+    """
+    Makes the constant potential function that is integrated over 
+    linear elements for the stiffness matrix
+    F2S version.
+
+    Parameters:
+        lin_mesh: the linear mesh object
+        x_0: the source point
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_linear(xi, eta, nodes)
         return geo.stresslet(x, x_0, n)
     return quad_func
 

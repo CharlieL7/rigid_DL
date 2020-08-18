@@ -77,3 +77,39 @@ def int_over_tri_quadratic(func, nodes):
 
     ret = 0.5 * h_s * np.dot(f, w)
     return ret
+
+
+def int_over_tri_linear_f2s(func, nodes, h_s):
+    """
+    Integrate a function over a flat triangle surface using Gaussian quadrature.
+    Seven point quadrature.
+    F2S version.
+
+    Parameters:
+        func: function to integrate, can return any order tensor
+               expecting f(xi, eta, nodes)
+        h_s: triangle area
+    Returns:
+        integrated function
+    """
+
+    # Gaussian quadrature weights
+    w = 1./60. * np.array([3., 8., 3., 8., 3., 8., 27.])
+
+    # Gaussian quadrature points
+    para_pts = [
+        (0.0, 0.0),
+        (0.5, 0.0),
+        (1.0, 0.0),
+        (0.5, 0.5),
+        (0.0, 1.0),
+        (0.0, 0.5),
+        (1./3., 1./3.),
+    ]
+    f = []
+    for xi, eta in para_pts:
+        f.append(func(xi, eta, nodes))
+    f = np.transpose(np.array(f)) # make (3,7)
+
+    ret = 0.5 * h_s * np.dot(f, w)
+    return ret

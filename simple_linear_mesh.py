@@ -172,7 +172,7 @@ class simple_linear_mesh:
 
     def calc_normal(self, nodes):
         """
-        Calculates the normal vector for a face
+        Calculates the unit normal vector for a face
 
         Paramters:
             nodes : three nodes of triangle as columns in 3x3 ndarray

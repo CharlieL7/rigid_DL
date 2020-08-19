@@ -1,60 +1,9 @@
 """
-Direct calulation of the velocity solution from an eigenfunction density input
-To check if the method we are employing makes sense.
+Matrix assembly functions for the different parameterizations
 """
-import sys
-import math
-import time
 import numpy as np
-import simple_linear_mesh as slm
-import input_output as io
 import gauss_quad as gq
 import geometric as geo
-import eigenfunctions as efun
-
-def main():
-    if len(sys.argv) != 4:
-        print("Usage: mesh name, constant or linear (c, l), output name")
-        sys.exit()
-    mesh_name = sys.argv[1]
-    const_or_linear = sys.argv[2]
-    assert const_or_linear in ('c', 'l')
-    out_name = sys.argv[3]
-
-    t0 = time.time()
-
-    (x_data, f2v, _params) = io.read_short_dat(mesh_name)
-    f2v = f2v - 1 # indexing change
-    mesh = slm.simple_linear_mesh(x_data, f2v)
-    #v_in = efun.diag_eigvec("-", mesh, const_or_linear)
-    v_cnst = np.array([1, 0, 0])
-    v_trans_in = efun.make_translation_vels(v_cnst, mesh, const_or_linear)
-    v_12_in = efun.E_12(mesh, const_or_linear)
-
-    t1 = time.time()
-    print("{}, before construct stiffness matrix".format(t1 - t0))
-
-    if const_or_linear == 'c':
-        C = make_mat_cp_le_f2s(mesh) # stiffness matrix
-    elif const_or_linear == 'l':
-        C = make_mat_lp_le(mesh) # stiffness matrix
-
-    v_trans_out = np.dot(C, v_trans_in.flatten('C'))
-    v_trans_out = v_trans_out.reshape(v_trans_in.shape, order='C')
-    v_12_out = np.dot(C, v_12_in.flatten('C'))
-    v_12_out = v_12_out.reshape(v_12_in.shape, order='C')
-
-    t2 = time.time()
-    print("{}, matrix forming and dotting walltime".format(t2 - t1))
-
-    #w, v = np.linalg.eig(C)
-    #io.write_eigval(w, "{}_eigval.csv".format(out_name))
-    #io.write_eigvec(v, "{}_eigvec.csv".format(out_name))
-    io.write_vel(v_trans_in, v_trans_out, "{}_trans_vel.csv".format(out_name))
-    io.write_vel(v_12_in, v_12_out, "{}_12_vel.csv".format(out_name))
-
-    t3 = time.time()
-    print("{}, write out walltime".format(t3 - t2))
 
 
 def make_mat_cp_le(lin_mesh):
@@ -68,7 +17,7 @@ def make_mat_cp_le(lin_mesh):
         the stresslet matrix
     """
     num_faces = lin_mesh.faces.shape[0]
-    c_0 = 1. / (4. * math.pi)
+    c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_faces, 3 * num_faces))
     for src_num in range(num_faces): # source points
         src_center = lin_mesh.calc_tri_center(lin_mesh.get_nodes(lin_mesh.faces[src_num]))
@@ -85,7 +34,7 @@ def make_mat_cp_le(lin_mesh):
                   (3 * src_num):(3 * src_num + 3)] -= sub_mat
             # do nothing face_num == src_num, how it works out for constant elements
         C[(3 * src_num):(3 * src_num + 3),
-          (3 * src_num):(3 * src_num + 3)] -= 4. * math.pi * np.identity(3)
+          (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
     C = np.dot(c_0, C)
     return C
 
@@ -102,7 +51,7 @@ def make_mat_cp_le_f2s(lin_mesh):
         the stresslet matrix
     """
     num_faces = lin_mesh.faces.shape[0]
-    c_0 = 1. / (4. * math.pi)
+    c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces):
         face_nodes = lin_mesh.get_nodes(lin_mesh.faces[face_num])
@@ -122,7 +71,7 @@ def make_mat_cp_le_f2s(lin_mesh):
                   (3 * src_num):(3 * src_num + 3)] -= sub_mat
             # do nothing face_num == src_num, how it works out for constant elements
         C[(3 * src_num):(3 * src_num + 3),
-          (3 * src_num):(3 * src_num + 3)] -= 4. * math.pi * np.identity(3)
+          (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
     C = np.dot(c_0, C)
     return C
 
@@ -139,7 +88,7 @@ def make_mat_lp_le(lin_mesh):
     """
     num_faces = lin_mesh.faces.shape[0]
     num_verts = lin_mesh.vertices.shape[0]
-    c_0 = 1. / (4. * math.pi)
+    c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_verts, 3 * num_verts))
 
     for src_num in range(num_verts): # source points
@@ -174,7 +123,7 @@ def make_mat_lp_le(lin_mesh):
 
         # whole surface q(x_0) term
         C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= (
-            4. * math.pi * np.identity(3)
+            4. * np.pi * np.identity(3)
         )
 
     C = np.dot(c_0, C)
@@ -192,7 +141,7 @@ def make_mat_cp_qe(quad_mesh):
         the stresslet matrix
     """
     num_faces = quad_mesh.faces.shape[0]
-    c_0 = 1. / (4. * math.pi)
+    c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_faces, 3 * num_faces))
     for src_num in range(num_faces): # source points
         src_center = quad_mesh.calc_tri_center(quad_mesh.get_nodes(quad_mesh.faces[src_num]))
@@ -209,7 +158,7 @@ def make_mat_cp_qe(quad_mesh):
                   (3 * src_num):(3 * src_num + 3)] -= sub_mat
             # do nothing face_num == src_num, how it works out for constant elements
         C[(3 * src_num):(3 * src_num + 3),
-          (3 * src_num):(3 * src_num + 3)] -= 4. * math.pi * np.identity(3)
+          (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
     C = np.dot(c_0, C)
     return C
 
@@ -226,7 +175,7 @@ def make_mat_lp_qe(quad_mesh):
     """
     num_faces = quad_mesh.faces.shape[0]
     num_verts = quad_mesh.vertices.shape[0]
-    c_0 = 1. / (4. * math.pi)
+    c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_verts, 3 * num_verts))
 
     for src_num in range(num_verts): # source points
@@ -261,7 +210,7 @@ def make_mat_lp_qe(quad_mesh):
 
         # whole surface q(x_0) term
         C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= (
-            4. * math.pi * np.identity(3)
+            4. * np.pi * np.identity(3)
         )
 
     C = np.dot(c_0, C)

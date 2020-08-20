@@ -16,18 +16,21 @@ class simple_linear_mesh:
         Constructor for the simple_mesh object.
 
         Parameters:
-            x : vertices in list-like object (N, 3)
+            x : vertices in list-like object (Nv, 3)
             f : list-like with indices to vertices of a triangle
-                expecting 3 node triangles (N, 3)
+                expecting 3 node triangles (Nf, 3)
         """
         # (N, 3) ndarray
         self.vertices = np.array(x)
 
         # (N, 3) ndarray
         self.faces = np.array(f)
+        self.normals = self.calc_all_n()
+        self.hs = self.calc_all_hs()
         self.surf_area = self.calc_surf_area()
-        self.center_mesh()
         self.centroid = self.calc_mesh_centroid()
+        self.reori_n()
+        self.center_mesh()
         self.mom_inertia = self.calc_moment_inertia_tensor()
         self.dims = self.calc_ellip_dims()
 
@@ -85,35 +88,57 @@ class simple_linear_mesh:
         return cls(x_data, f2v)
 
 
+    def calc_all_n(self):
+        """
+        Calculates all of the mesh normals, (Nf, 3) ndarray.
+        Orientation still needs to be checked.
+        """
+        Nf = self.faces.shape[0]
+        normals = np.empty([Nf, 3])
+        for i, face in enumerate(self.faces):
+            nodes = self.get_nodes(face)
+            normals[i] = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
+        return normals
+
+
+    def calc_all_hs(self):
+        """
+        Calculates all of the hs values on the mesh
+        """
+        return np.linalg.norm(self.normals, axis=1)
+
+
+    def reori_n(self):
+        """
+        Checks the orientation of the normals and reorients them to point
+        outwards from the mesh if required
+        """
+        for i, face in enumerate(self.faces):
+            nodes = self.get_nodes(face)
+            x_c2tri = self.calc_tri_center(nodes) - self.centroid
+            if np.dot(self.normals[i], x_c2tri) < 0.:
+                self.normals[i] = -self.normals[i]
+
+
     def calc_surf_area(self):
         """
         Calculates the surface area of the mesh
-
-        Parameters:
-            requires vertices, faces to be set
-        Returns:
-            total surface area of mesh
         """
         s_a = 0.0
-        for f in self.faces: # get rows
-            nodes = self.get_nodes(f)
-            s_a += gq.int_over_tri_linear(geo.const_func, nodes)
+        for i, face in enumerate(self.faces): # get rows
+            nodes = self.get_nodes(face)
+            s_a += gq.int_over_tri_lin(geo.const_func, nodes, self.hs[i])
         return s_a
 
 
     def calc_mesh_centroid(self):
         """
         Calculates the centroid of the mesh weighted by the element area
-
-        Parameters:
-            requires vertices, faces, surf_area to be set
-        Returns:
-            centroid as ndarray of shape (3, )
         """
         x_c = np.zeros(3)
-        for f in self.faces:
-            nodes = self.get_nodes(f)
-            x_c += gq.int_over_tri_linear(geo.pos_linear, nodes)
+        for i, face in enumerate(self.faces):
+            nodes = self.get_nodes(face)
+            x_c += gq.int_over_tri_lin(geo.pos_linear, nodes, self.hs[i])
         x_c /= self.surf_area
         return x_c
 
@@ -122,18 +147,11 @@ class simple_linear_mesh:
         """
         Calculates the moment of inertia tensor
         Uses element area weighting
-
-        Parameters:
-            requires vertices, faces, surf_area, centroid
-        Returns:
-            moment of inertia as ndarray of shape (3, 3)
         """
-
         inertia_tensor = np.zeros((3, 3))
-        for f in self.faces:
-            nodes = self.get_nodes(f)
-            inertia_tensor += gq.int_over_tri_linear(geo.inertia_func_linear, nodes)
-
+        for i, face in enumerate(self.faces):
+            nodes = self.get_nodes(face)
+            inertia_tensor += gq.int_over_tri_lin(geo.inertia_func_linear, nodes, self.hs[i])
         inertia_tensor /= self.surf_area
         return inertia_tensor
 
@@ -141,11 +159,6 @@ class simple_linear_mesh:
     def calc_rotation_vectors(self):
         """
         Calculates the rotation vectors (eigensolutions)
-
-        Parameters:
-            requires vertices, faces, surf_area, centroid, mom_inertia
-        Returns:
-            w : eigensolutions for rotations, ndarray (3, 3), rows are the vectors
         """
         eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
         w = np.zeros((3, 3))
@@ -168,23 +181,6 @@ class simple_linear_mesh:
         x_2 = self.vertices[face[2]]
         nodes = np.stack((x_0, x_1, x_2), axis=1)
         return nodes
-
-
-    def calc_normal(self, nodes):
-        """
-        Calculates the unit normal vector for a face
-
-        Paramters:
-            nodes : three nodes of triangle as columns in 3x3 ndarray
-        Returns:
-            n : normalized normal vector, (3, ) ndarray
-        """
-        n = np.cross(nodes[:, 1] - nodes[:, 0], nodes[:, 2] - nodes[:, 0])
-        # make outwards pointing
-        x_c2tri = self.calc_tri_center(nodes) - self.centroid
-        if np.dot(n, x_c2tri) < 0.:
-            n = -n
-        return n / np.linalg.norm(n)
 
 
     def calc_tri_center(self, nodes):

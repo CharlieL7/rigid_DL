@@ -8,7 +8,7 @@ import meshio
 import simple_quad_mesh as sqm
 import eigenfunctions as efun
 import input_output as io
-import potential_calc as poc
+import mat_assembly as mata 
 
 def main():
     parser = argp.ArgumentParser(description="Quadratic mesh test")
@@ -21,7 +21,7 @@ def main():
             faces = cell_block.data
 
     quad_mesh = sqm.simple_quad_mesh(verts, faces)
-    C = poc.make_mat_cp_qe(quad_mesh)
+    C = mata.make_mat_cp_qe(quad_mesh)
     v_cnst = np.array([1, 0, 0])
     v_trans_in = efun.make_translation_vels(v_cnst, quad_mesh, 'c')
     v_trans_out = np.dot(C, v_trans_in.flatten('C'))

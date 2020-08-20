@@ -13,7 +13,7 @@ def pos_linear(xi, eta, nodes):
     Returns:
         x : output position (3,) ndarray
     """
-    x = (1. - xi - eta) * nodes[0] + xi * nodes[1] + eta * nodes[2]
+    x = (1. - xi - eta) * nodes[:, 0] + xi * nodes[:, 1] + eta * nodes[: 2]
     return x
 
 
@@ -109,15 +109,31 @@ def calc_abg(nodes):
     return (alpha, beta, gamma)
 
 
-def stresslet(x, x_0, n):
+def stresslet(x, x_0):
     """
     Green's function associated with stress tensor of point force or flow from a point source.
-    Dotted with the normal vector.
-    T_ijk @ n_k
+    T_ijk
     Parameters:
         x : field point, (3,) ndarray
         x_0 : source point, (3,) ndarray
-        n : normal vector, (3,) ndarray
+    Returns:
+        T_ijk : (3,3,3) ndarray
+    """
+    x_hat = x - x_0
+    r = np.linalg.norm(x_hat)
+    T_ijk = -6. * np.einsum("i,j,k->ijk", x_hat, x_hat, x_hat) / (r**5.)
+    return T_ijk
+
+
+def stresslet_n(x, x_0, n):
+    """
+    Green's function associated with stress tensor of point force or flow from a point source.
+    Dotted with the normal vector.
+    T_ijk n_k
+    Parameters:
+        x : field point, (3,) ndarray
+        x_0 : source point, (3,) ndarray
+        n : unit normal vector, (3,) ndarray
     Returns:
         S_ij : (3,3) ndarray
     """

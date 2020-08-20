@@ -12,12 +12,12 @@ import eigenfunctions as efun
 def main():
     parser = argp.ArgumentParser(description="Linear mesh eigenvalue tests")
     parser.add_argument("mesh", help="linear mesh file input")
-    parser.add_argument("c_l", help="constant or linear potentials")
-    parser.add_argument("o", "out_tag", help="tag to prepend to output files")
+    parser.add_argument("cl", help="constant or linear potentials")
+    parser.add_argument("-o", "--out_tag", help="tag to prepend to output files")
     args = parser.parse_args()
 
     mesh_name = args.mesh
-    const_or_linear = args.c_l
+    const_or_linear = args.cl
     assert const_or_linear in ('c', 'l')
     out_name = "test"
     if args.out_tag:

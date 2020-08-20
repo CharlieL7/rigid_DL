@@ -15,17 +15,41 @@ class simple_quad_mesh:
         Constructor for the simple_mesh object.
 
         Parameters:
-            x : vertices in list-like object (N, 3)
+            x : vertices in list-like object (Nv, 3)
             f : list-like with indices to vertices of a triangle
-                expecting 6 node curved triangles (N, 3)
+                expecting 6 node curved triangles (Nf, 3)
                 Indicies 0, 1, 2 should be the triangle vertices
         """
         self.vertices = np.array(x) # (N, 3) ndarray
         self.faces = np.array(f) # (N, 3) ndarray
+        self.quad_n = self.calc_all_quad_n()
+        self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
         self.center_mesh()
         self.centroid = self.calc_mesh_centroid()
         self.mom_inertia = self.calc_moment_inertia_tensor()
+
+
+    def calc_all_quad_n(self):
+        """
+        Calculates all of the normal vector values that will be used for seven point
+        Gaussian quadrature
+        """
+        Nf = self.faces.shape[0]
+        normals = np.empty([Nf, 3, 7])
+        for i, face in enumerate(self.faces):
+            nodes = self.get_nodes(face)
+            normals[i] = gq.quad_n(nodes)
+        return normals
+
+
+    def calc_all_quad_hs(self):
+        """
+        Calculates all of the hs values that will be used for seven point
+        Gaussian quadrature
+        """
+        assert self.quad_n.any()
+        return np.linalg.norm(self.quad_n, axis=1)
 
 
     def calc_surf_area(self):
@@ -38,9 +62,9 @@ class simple_quad_mesh:
             total surface area of mesh
         """
         s_a = 0.0
-        for f in self.faces: # get rows
-            nodes = self.get_nodes(f)
-            s_a += gq.int_over_tri_quadratic(geo.const_func, nodes)
+        for i, face in enumerate(self.faces):
+            nodes = self.get_nodes(face)
+            s_a += gq.int_over_tri_quad(geo.const_func, nodes, self.quad_hs[i])
         return s_a
 
 
@@ -54,9 +78,9 @@ class simple_quad_mesh:
             centroid as ndarray of shape (3, )
         """
         x_c = np.zeros(3)
-        for f in self.faces:
-            nodes = self.get_nodes(f)
-            x_c += gq.int_over_tri_quadratic(geo.pos_quadratic, nodes)
+        for i, face in enumerate(self.faces):
+            nodes = self.get_nodes(face)
+            x_c += gq.int_over_tri_quad(geo.pos_quadratic, nodes, self.quad_hs[i])
         x_c /= self.surf_area
         return x_c
 
@@ -73,10 +97,13 @@ class simple_quad_mesh:
         """
 
         inertia_tensor = np.zeros((3, 3))
-        for f in self.faces:
-            nodes = self.get_nodes(f)
-            inertia_tensor += gq.int_over_tri_quadratic(geo.inertia_func_quadratic, nodes)
-
+        for i, face in enumerate(self.faces):
+            nodes = self.get_nodes(face)
+            inertia_tensor += gq.int_over_tri_quad(
+                geo.inertia_func_quadratic,
+                nodes,
+                self.quad_hs[i]
+            )
         inertia_tensor /= self.surf_area
         return inertia_tensor
 
@@ -118,7 +145,8 @@ class simple_quad_mesh:
 
     def normal_func(self, xi, eta, nodes):
         """
-        Normal function of the face
+        Normal function of the face.
+        Values are cached for better runtime.
 
         Paramters:
             xi : first parametric variable

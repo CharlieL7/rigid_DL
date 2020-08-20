@@ -30,33 +30,12 @@ def int_over_tri_lin(func, nodes, hs):
         hs: triangle area
     Returns:
         integrated function
-
+    """
     f = []
     for xi, eta in PARA_PTS:
         f.append(func(xi, eta, nodes))
     f = np.transpose(np.array(f))
     ret = 0.5 * hs * np.dot(f, W)
-    return ret
-"""
-    # Gaussian quadrature weights
-    w = 1./60. * np.array([3., 8., 3., 8., 3., 8., 27.])
-
-    # Gaussian quadrature points
-    para_pts = [
-        (0.0, 0.0),
-        (0.5, 0.0),
-        (1.0, 0.0),
-        (0.5, 0.5),
-        (0.0, 1.0),
-        (0.0, 0.5),
-        (1./3., 1./3.),
-    ]
-    f = []
-    for xi, eta in para_pts:
-        f.append(func(xi, eta, nodes))
-    f = np.transpose(np.array(f)) # make (3,7)
-
-    ret = 0.5 * hs * np.dot(f, w)
     return ret
 
 

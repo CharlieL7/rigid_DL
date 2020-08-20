@@ -97,7 +97,7 @@ class simple_linear_mesh:
         normals = np.empty([Nf, 3])
         for i, face in enumerate(self.faces):
             nodes = self.get_nodes(face)
-            normals[i] = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
+            normals[i] = np.cross(nodes[:, 1] - nodes[:, 0], nodes[:, 2] - nodes[:, 0])
         return normals
 
 

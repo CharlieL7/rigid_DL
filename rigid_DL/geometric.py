@@ -13,7 +13,7 @@ def pos_linear(xi, eta, nodes):
     Returns:
         x : output position (3,) ndarray
     """
-    x = (1. - xi - eta) * nodes[:, 0] + xi * nodes[:, 1] + eta * nodes[: 2]
+    x = (1. - xi - eta) * nodes[:, 0] + xi * nodes[:, 1] + eta * nodes[:, 2]
     return x
 
 

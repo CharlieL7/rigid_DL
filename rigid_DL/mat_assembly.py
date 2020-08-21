@@ -71,6 +71,7 @@ def make_mat_lp_le(lin_mesh):
 
             if is_singular: # singular triangle
                 for node_num in range(3):
+                    node_global_num = lin_mesh.faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_lin(
                         make_sing_lp_le_quad_func(
                             face_unit_n, src_pt, node_num, local_singular_ind
@@ -80,6 +81,8 @@ def make_mat_lp_le(lin_mesh):
                     )
                     C[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
+                    if node_num != local_singular_ind:
+                        C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
 
             else: # regular triangle
                 for node_num in range(3):
@@ -175,6 +178,7 @@ def make_mat_lp_qe(quad_mesh):
 
             if is_singular: # singular triangle
                 for node_num in range(3):
+                    node_global_num = quad_mesh.faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_quad_n(
                         make_sing_lp_qe_quad_func(
                             src_pt, node_num, local_singular_ind
@@ -185,6 +189,8 @@ def make_mat_lp_qe(quad_mesh):
                     )
                     C[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
+                    if node_num != local_singular_ind:
+                        C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
 
             else: # regular triangle
                 for node_num in range(3):

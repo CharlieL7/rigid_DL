@@ -26,9 +26,9 @@ def main():
     print("{}, meshio read time".format(t1 - t0))
 
     quad_mesh = sqm.simple_quad_mesh(verts, faces)
-    C = mata.make_mat_cp_qe(quad_mesh)
+    C = mata.make_mat_lp_qe(quad_mesh)
     v_cnst = np.array([1, 0, 0])
-    v_trans_in = efun.make_translation_vels(v_cnst, quad_mesh, 'c')
+    v_trans_in = efun.make_translation_vels(v_cnst, quad_mesh, 'l')
     v_trans_out = np.dot(C, v_trans_in.flatten('C'))
     v_trans_out = v_trans_out.reshape(v_trans_in.shape, order='C')
     t0 = time.time()

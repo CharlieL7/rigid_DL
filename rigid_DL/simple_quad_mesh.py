@@ -20,14 +20,51 @@ class simple_quad_mesh:
                 expecting 6 node curved triangles (Nf, 3)
                 Indicies 0, 1, 2 should be the triangle vertices
         """
-        self.vertices = np.array(x) # (N, 3) ndarray
-        self.faces = np.array(f) # (N, 3) ndarray
+        self.vertices = np.array(x) # (Nv, 3) ndarray
+        self.faces = np.array(f) # (Nf, 3) ndarray
+        # linear mesh from quadratic mesh for linear potentials
+        self.lin_verts = None
+        self.lin_faces = None
+        self.make_linear_mesh()
         self.quad_n = self.calc_all_quad_n()
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
         self.center_mesh()
         self.centroid = self.calc_mesh_centroid()
         self.mom_inertia = self.calc_moment_inertia_tensor()
+
+
+    def make_linear_mesh(self):
+        """
+        creates the linear mesh structure for subparametric interpolation
+        """
+        tmp_faces = []
+        lin_vert_nums = []
+
+        for face in self.faces:
+            node_nums = face[0:3]
+            tmp_faces.append(node_nums)
+            for v_num in node_nums:
+                if v_num not in lin_vert_nums:
+                    lin_vert_nums.append(v_num)
+        lin_vert_nums.sort()
+
+        tmp_verts = []
+        for vert_num in lin_vert_nums:
+            tmp_verts.append(self.vertices[vert_num])
+        self.lin_verts = np.array(tmp_verts)
+
+        lin_to_quad_map = {}
+        for i, v_num in enumerate(lin_vert_nums):
+            lin_to_quad_map[i] = v_num
+        quad_to_lin_map = dict((v, k) for k, v in lin_to_quad_map.items()) # values must be unique
+        loc_lin_faces = []
+        for lin_face in tmp_faces:
+            arr = np.empty(3)
+            for i, quad_node_num in enumerate(lin_face):
+                arr[i] = quad_to_lin_map[quad_node_num]
+            loc_lin_faces.append(arr)
+        self.lin_faces = np.array(loc_lin_faces, dtype=int)
 
 
     def calc_all_quad_n(self):

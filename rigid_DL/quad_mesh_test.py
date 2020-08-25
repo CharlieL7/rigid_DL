@@ -28,7 +28,7 @@ def main():
     quad_mesh = sqm.simple_quad_mesh(verts, faces)
     C = mata.make_mat_lp_qe(quad_mesh)
     v_cnst = np.array([1, 0, 0])
-    v_trans_in = efun.make_translation_vels(v_cnst, quad_mesh, 'l')
+    v_trans_in = np.zeros((quad_mesh.lin_verts.shape[0], 1), dtype=v_cnst.dtype) + v_cnst
     v_trans_out = np.dot(C, v_trans_in.flatten('C'))
     v_trans_out = v_trans_out.reshape(v_trans_in.shape, order='C')
     t0 = time.time()

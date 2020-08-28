@@ -163,10 +163,8 @@ def make_mat_lp_qe(quad_mesh):
     """
     num_faces = quad_mesh.lin_faces.shape[0]
     num_verts = quad_mesh.lin_verts.shape[0]
-    print(num_verts)
     c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_verts, 3 * num_verts))
-    print("C shape: {}".format(C.shape))
 
     for face_num in range(num_faces): # integrate over faces
         face_nodes = quad_mesh.get_nodes(quad_mesh.faces[face_num])
@@ -199,8 +197,6 @@ def make_mat_lp_qe(quad_mesh):
                         face_hs,
                         face_n
                     )
-                    print("src_num: {}".format(src_num))
-                    print("node_global_num: {}".format(node_global_num))
                     C[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
                 # subtracting the q(x_0) term

@@ -127,7 +127,6 @@ def make_mat_cp_qe(quad_mesh):
     C = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces): # field points
         face_nodes = quad_mesh.get_nodes(quad_mesh.faces[face_num])
-        face_hs = quad_mesh.quad_hs[face_num]
         face_n = quad_mesh.quad_n[face_num]
         for src_num in range(num_faces): # source points
             src_center = quad_mesh.calc_tri_center(quad_mesh.get_nodes(quad_mesh.faces[src_num]))
@@ -135,7 +134,6 @@ def make_mat_cp_qe(quad_mesh):
                 sub_mat = gq.int_over_tri_quad_n(
                     make_cp_qe_quad_func(src_center),
                     face_nodes,
-                    face_hs,
                     face_n
                 )
                 C[(3 * src_num):(3 * src_num + 3),
@@ -168,7 +166,6 @@ def make_mat_lp_qe(quad_mesh):
 
     for face_num in range(num_faces): # integrate over faces
         face_nodes = quad_mesh.get_nodes(quad_mesh.faces[face_num])
-        face_hs = quad_mesh.quad_hs[face_num]
         face_n = quad_mesh.quad_n[face_num]
         for src_num in range(num_verts): # source points
             src_pt = quad_mesh.vertices[src_num]
@@ -182,7 +179,6 @@ def make_mat_lp_qe(quad_mesh):
                             src_pt, node_num, local_singular_ind
                             ),
                         face_nodes,
-                        face_hs,
                         face_n
                     )
                     C[(3 * src_num):(3 * src_num + 3),
@@ -194,7 +190,6 @@ def make_mat_lp_qe(quad_mesh):
                     sub_mat = gq.int_over_tri_quad_n(
                         make_reg_lp_qe_quad_func(src_pt, node_num),
                         face_nodes,
-                        face_hs,
                         face_n
                     )
                     C[(3 * src_num):(3 * src_num + 3),
@@ -203,7 +198,6 @@ def make_mat_lp_qe(quad_mesh):
                 sub_mat = gq.int_over_tri_quad_n(
                     make_cp_qe_quad_func(src_pt),
                     face_nodes,
-                    face_hs,
                     face_n
                 )
                 C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat

@@ -90,8 +90,6 @@ class simple_quad_mesh:
         return np.linalg.norm(self.quad_n, axis=1)
 
 
-    def norm
-
     def calc_surf_area(self):
         """
         Calculates the surface area of the mesh

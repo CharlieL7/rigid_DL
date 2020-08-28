@@ -26,20 +26,19 @@ def main():
     f2v = f2v - 1 # indexing change
     mesh = slm.simple_linear_mesh(x_data, f2v)
 
-    v_cnst = np.array([1, 0, 0])
-    v_trans_in = np.zeros((mesh.faces.shape[0], 1), dtype=v_cnst.dtype) + v_cnst
-
-    E_d, E_c = efun.E_12(mesh)
-    v_12_in = efun.make_cp_le_lin_vels(E_d, E_c, mesh)
 
     t1 = time.time()
     print("{}, before construct stiffness matrix".format(t1 - t0))
 
     C = mata.make_mat_cp_le(mesh) # stiffness matrix
 
+    v_cnst = np.array([1, 0, 0])
+    v_trans_in = np.zeros((mesh.faces.shape[0], 1), dtype=v_cnst.dtype) + v_cnst
     v_trans_out = np.dot(C, v_trans_in.flatten('C'))
     v_trans_out = v_trans_out.reshape(v_trans_in.shape, order='C')
 
+    E_d, E_c = efun.E_12(mesh)
+    v_12_in = efun.make_cp_le_lin_vels(E_d, E_c, mesh)
     v_12_out = np.dot(C, v_12_in.flatten('C'))
     v_12_out = v_12_out.reshape(v_12_in.shape, order='C')
 

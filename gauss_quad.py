@@ -60,7 +60,7 @@ def int_over_tri_quad(func, nodes, hs):
     return ret
 
 
-def int_over_tri_quad_n(func, nodes, hs, n):
+def int_over_tri_quad_n(func, nodes, n):
     """
     Version that integrates function dotted with an array of normal vectors.
     This is used to minimize number of times normal vector calculation over
@@ -70,14 +70,14 @@ def int_over_tri_quad_n(func, nodes, hs, n):
         func: function to integrate, must return (3,3,3) ndarray
                expecting f(eta, xi, nodes)
         nodes: 3x6 ndarray with nodes as column vectors
-        hs: areas at the seven quadrature points (7,) ndarray
         n: normal vectors at the seven quadrature points (3, 7) ndarray
+            (not normalized vectors)
     Returns:
         integrated (function . n)
     """
     f = np.empty([3, 3, 7])
     for i, (xi, eta) in enumerate(PARA_PTS):
-        f[:, :, i] = np.einsum("ijk,k->ij", func(xi, eta, nodes), n[:, i]) * hs[i]
+        f[:, :, i] = np.dot(func(xi, eta, nodes), n[:, i])
     ret = 0.5 * np.dot(f, W)
     return ret
 

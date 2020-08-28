@@ -30,7 +30,7 @@ def main():
 
     C = mata.make_mat_cp_qe(quad_mesh)
 
-    v_cnst = np.array([0, 1, 0])
+    v_cnst = np.array([1, 0, 0])
     #v_trans_in = np.zeros((quad_mesh.lin_verts.shape[0], 1), dtype=v_cnst.dtype) + v_cnst
     v_trans_in = np.zeros((quad_mesh.lin_faces.shape[0], 1), dtype=v_cnst.dtype) + v_cnst
     v_trans_out = np.dot(C, v_trans_in.flatten('C'))

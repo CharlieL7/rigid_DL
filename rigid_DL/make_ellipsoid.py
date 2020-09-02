@@ -3,7 +3,7 @@ Creates an ellipsoidal mesh from a spherical mesh input
 """
 import sys
 import ast
-import simple_linear_mesh as slm
+import rigid_DL.simple_linear_mesh as slm
 
 def main():
     if len(sys.argv) != 2:

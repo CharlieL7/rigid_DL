@@ -6,10 +6,10 @@ import time
 import argparse as argp
 import numpy as np
 import meshio
-import simple_quad_mesh as sqm
-import eigenfunctions as efun
-import input_output as io
-import mat_assembly as mata
+import rigid_DL.simple_quad_mesh as sqm
+import rigid_DL.eigenfunctions as efun
+import rigid_DL.input_output as io
+import rigid_DL.mat_assembly as mata
 
 def main():
     parser = argp.ArgumentParser(description="Quadratic mesh test")

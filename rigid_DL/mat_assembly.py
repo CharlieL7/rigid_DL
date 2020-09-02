@@ -2,8 +2,8 @@
 Matrix assembly functions for the different parameterizations
 """
 import numpy as np
-import gauss_quad as gq
-import geometric as geo
+import rigid_DL.gauss_quad as gq
+import rigid_DL.geometric as geo
 
 def make_mat_cp_le(lin_mesh):
     """

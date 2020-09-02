@@ -5,10 +5,10 @@ Used to get a measure of the global error in a discretization
 """
 import sys
 import numpy as np
-import input_output as io
-import simple_linear_mesh as slm
-import potential_calc_v2 as pot_calc
-import eigenfunctions as efun
+import rigid_DL.input_output as io
+import rigid_DL.simple_linear_mesh as slm
+import rigid_DL.potential_calc_v2 as pot_calc
+import rigid_DL.eigenfunctions as efun
 
 def main():
     if len(sys.argv) != 3:

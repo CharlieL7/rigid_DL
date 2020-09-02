@@ -2,7 +2,7 @@
 Functions to get a eigenvalues of an ellipsoid
 """
 import math
-from elliptic_integrals import ellip_pp_cnst, ellip_p_cnst
+from rigid_DL.elliptic_integrals import ellip_pp_cnst, ellip_p_cnst
 
 def lambda_12(dims):
     """

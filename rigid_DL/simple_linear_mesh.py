@@ -6,8 +6,8 @@ Has functions to calculate properties on the mesh.
 import csv
 import sys
 import numpy as np
-import geometric as geo
-import gauss_quad as gq
+import rigid_DL.geometric as geo
+import rigid_DL.gauss_quad as gq
 
 class simple_linear_mesh:
 

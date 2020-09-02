@@ -4,7 +4,7 @@ Eigenfunctions for the ellipsoidal particle
 
 import numpy as np
 from scipy.linalg import null_space
-import eigenvalues as ev
+import rigid_DL.eigenvalues as ev
 
 def make_cp_le_lin_vels(E_d, E_c, mesh):
     """

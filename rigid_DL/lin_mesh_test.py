@@ -4,10 +4,10 @@ Linear mesh eigenvalue tests
 import time
 import argparse as argp
 import numpy as np
-import input_output as io
-import simple_linear_mesh as slm
-import mat_assembly as mata
-import eigenfunctions as efun
+import rigid_DL.input_output as io
+import rigid_DL.simple_linear_mesh as slm
+import rigid_DL.mat_assembly as mata
+import rigid_DL.eigenfunctions as efun
 
 def main():
     parser = argp.ArgumentParser(description="Linear mesh eigenvalue tests")

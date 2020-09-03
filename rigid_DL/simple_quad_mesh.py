@@ -21,7 +21,7 @@ class simple_quad_mesh:
                 Indicies 0, 1, 2 should be the triangle vertices
         """
         self.vertices = np.array(x) # (Nv, 3) ndarray
-        self.faces = np.array(f) # (Nf, 3) ndarray
+        self.faces = np.array(f) # (Nf, 6) ndarray
         # linear mesh from quadratic mesh for linear potentials
         self.lin_verts = None
         self.lin_faces = None
@@ -29,10 +29,10 @@ class simple_quad_mesh:
         self.quad_n = self.calc_all_quad_n()
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
-        self.center_mesh()
         self.centroid = self.calc_mesh_centroid()
         self.mom_inertia = self.calc_moment_inertia_tensor()
         self.dims = self.calc_ellip_dims()
+        print(self.centroid)
 
 
     def make_linear_mesh(self):
@@ -224,6 +224,7 @@ class simple_quad_mesh:
         """
         old_centroid = self.calc_mesh_centroid()
         self.vertices -= old_centroid
+        self.lin_verts -= old_centroid
 
 
     def calc_ellip_dims(self):

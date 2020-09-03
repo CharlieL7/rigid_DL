@@ -44,6 +44,9 @@ def main():
     t0 = time.time()
     print("{}, matrix forming and dotting walltime".format(t0 - t1))
 
+    w, v = np.linalg.eig(C)
+    io.write_eigval(w, "quad_test_eigval.csv")
+    io.write_eigvec(v, "quad_test_eigvec.csv")
     io.write_vel(v_trans_in, v_trans_out, "quad_test_trans_vel.csv")
     io.write_vel(v_12_in, v_12_out, "quad_test_E12_vel.csv")
     t1 = time.time()

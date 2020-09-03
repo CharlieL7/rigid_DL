@@ -37,7 +37,6 @@ def make_mat_cp_le(lin_mesh):
                 C[(3 * src_num):(3 * src_num + 3),
                   (3 * src_num):(3 * src_num + 3)] -= sub_mat
             # do nothing face_num == src_num, how it works out for constant elements
-
     for src_num in range(num_faces):
         C[(3 * src_num):(3 * src_num + 3),
           (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)

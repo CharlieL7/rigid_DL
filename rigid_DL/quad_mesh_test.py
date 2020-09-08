@@ -24,10 +24,8 @@ def main():
             faces = cell_block.data
     t1 = time.time()
     print("{}, meshio read time".format(t1 - t0))
-
     quad_mesh = sqm.simple_quad_mesh(verts, faces)
     print("Calculated mesh dims: {}".format(quad_mesh.dims))
-
     C = mata.make_mat_cp_qe(quad_mesh)
 
     v_cnst = np.array([1, 0, 0])
@@ -46,9 +44,9 @@ def main():
 
     w, v = np.linalg.eig(C)
     io.write_eigval(w, "quad_test_eigval.csv")
-    io.write_eigvec(v, "quad_test_eigvec.csv")
-    io.write_vel(v_trans_in, v_trans_out, "quad_test_trans_vel.csv")
-    io.write_vel(v_12_in, v_12_out, "quad_test_E12_vel.csv")
+    #io.write_eigvec(v, "quad_test_eigvec.csv")
+    #io.write_vel(v_trans_in, v_trans_out, "quad_test_trans_vel.csv")
+    #io.write_vel(v_12_in, v_12_out, "quad_test_E12_vel.csv")
     t1 = time.time()
     print("{}, write out walltime".format(t1 - t0))
 

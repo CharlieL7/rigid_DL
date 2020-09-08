@@ -26,13 +26,12 @@ class simple_quad_mesh:
         self.lin_verts = None
         self.lin_faces = None
         self.make_linear_mesh()
+        self.centroid = self.calc_mesh_centroid_pc()
         self.quad_n = self.calc_all_quad_n()
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
-        self.centroid = self.calc_mesh_centroid()
         self.mom_inertia = self.calc_moment_inertia_tensor()
         self.dims = self.calc_ellip_dims()
-        print(self.centroid)
 
 
     def make_linear_mesh(self):
@@ -77,7 +76,8 @@ class simple_quad_mesh:
         normals = np.empty([Nf, 3, 7])
         for i, face in enumerate(self.faces):
             nodes = self.get_nodes(face)
-            normals[i] = gq.quad_n(nodes)
+            tri_c = self.calc_tri_center(nodes)
+            normals[i] = gq.quad_n(nodes, self.centroid, tri_c)
         return normals
 
 
@@ -120,6 +120,14 @@ class simple_quad_mesh:
             nodes = self.get_nodes(face)
             x_c += gq.int_over_tri_quad(geo.pos_quadratic, nodes, self.quad_hs[i])
         x_c /= self.surf_area
+        return x_c
+
+
+    def calc_mesh_centroid_pc(self):
+        """
+        Centroid of mesh assuming point cloud
+        """
+        x_c = np.mean(self.vertices, axis=0)
         return x_c
 
 

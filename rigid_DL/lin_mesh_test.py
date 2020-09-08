@@ -47,9 +47,9 @@ def main():
 
     w, v = np.linalg.eig(C)
     io.write_eigval(w, "{}_eigval.csv".format(out_name))
-    io.write_eigvec(v, "{}_eigvec.csv".format(out_name))
-    io.write_vel(v_trans_in, v_trans_out, "{}_trans_vel.csv".format(out_name))
-    io.write_vel(v_12_in, v_12_out, "{}_12_vel.csv".format(out_name))
+    #io.write_eigvec(v, "{}_eigvec.csv".format(out_name))
+    #io.write_vel(v_trans_in, v_trans_out, "{}_trans_vel.csv".format(out_name))
+    #io.write_vel(v_12_in, v_12_out, "{}_12_vel.csv".format(out_name))
 
     t3 = time.time()
     print("{}, write out walltime".format(t3 - t2))

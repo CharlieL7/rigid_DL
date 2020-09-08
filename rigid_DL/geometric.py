@@ -22,8 +22,8 @@ def pos_quadratic(xi, eta, nodes):
     position in a curved 6 node triangle as a function of eta and xi
 
     Parameters:
-        eta : parametric coordinate, scalar
         xi : paramteric coordinate, scalar
+        eta : parametric coordinate, scalar
         nodes : six nodes of triangle as columns in 3x6 ndarray
     Returns:
         x : output position (3,) ndarray
@@ -47,22 +47,23 @@ def dphi_dxi_quadratic(xi, eta, nodes):
     Calculates the dphi/dxi vector for a 2nd order curved triangular element.
 
     Parameters:
-        eta : parametric coordinate, scalar
         xi : paramteric coordinate, scalar
+        eta : parametric coordinate, scalar
         nodes : six nodes of triangle as columns in 3x6 ndarray
     Returns:
         dphi_dxi : dphi/dxi vector as ndarray shape (6)
     """
-    alpha, beta, gamma = calc_abg(nodes)
+    alpha, beta, gamma = calc_abg_alt(nodes)
+    (xi, eta) = (eta, xi)
     dphi_dxi = np.array([
         0.,
         (1. / (1. - alpha)) * (2. * xi - alpha + (alpha - gamma) / (1. - gamma) * eta),
-        (1. / (1. - beta)) * (beta + gamma - 1.) / (gamma) * eta,
+        (1. / (1. - beta)) * ((beta + gamma - 1.) / (gamma)) * eta,
         (1. / (alpha * (1. - alpha)) * (1. - 2. * xi - eta)),
         eta / (gamma * (1. - gamma)),
         -eta / (beta * (1. - beta)),
     ])
-    dphi_dxi[0] = 1. - np.sum(dphi_dxi)
+    dphi_dxi[0] = -np.sum(dphi_dxi)
     return dphi_dxi
 
 
@@ -71,22 +72,23 @@ def dphi_deta_quadratic(xi, eta, nodes):
     Calculates the dphi/deta vector for a 2nd order curved triangular element.
 
     Parameters:
-        eta : parametric coordinate, scalar
         xi : paramteric coordinate, scalar
+        eta : parametric coordinate, scalar
         nodes : six nodes of triangle as columns in 3x6 ndarray
     Returns:
         dphi_deta : dphi/deta vector as ndarray shape (6)
     """
-    alpha, beta, gamma = calc_abg(nodes)
+    alpha, beta, gamma = calc_abg_alt(nodes)
+    (xi, eta) = (eta, xi)
     dphi_deta = np.array([
         0.,
-        (1. / (1. - alpha)) * (alpha - gamma) / (1. - gamma) * xi,
-        (1. / (1. - beta)) * (2. * eta - beta + (beta + gamma - 1.) / (gamma) * xi),
+        (1. / (1. - alpha)) * ((alpha - gamma) / (1. - gamma)) * xi,
+        (1. / (1. - beta)) * (2. * eta - beta + ((beta + gamma - 1.) / (gamma)) * xi),
         -xi / (alpha * (1. - alpha)),
         xi / (gamma * (1. - gamma)),
         1. / (beta * (1. - beta)) * (1. - xi - 2. * eta),
     ])
-    dphi_deta[0] = 1. - np.sum(dphi_deta)
+    dphi_deta[0] = -np.sum(dphi_deta)
     return dphi_deta
 
 
@@ -219,3 +221,97 @@ def v_sph2cart(x, v):
     )
     dzdt = rd * math.cos(theta) - r * math.sin(theta) * td
     return np.array([dxdt, dydt, dzdt])
+
+
+### Alternative shape functions for testing ###
+def calc_abg_alt(nodes):
+    """
+    Calculate the alpha, beta, and gamma geometrical parameters for the parameterization
+    of a six-node curved triangle
+
+    Parameters:
+        nodes : six nodes of triangle as columns in 3x6 ndarray
+    Returns:
+        (alpha, beta, gamma) : tuple of floats
+    """
+    alpha = 1./(1 + np.linalg.norm(nodes[:, 5] - nodes[:, 0])/
+            np.linalg.norm(nodes[:, 5] - nodes[:, 2]))
+    beta = 1./(1 + np.linalg.norm(nodes[:, 4] - nodes[:, 1])/
+            np.linalg.norm(nodes[:, 4] - nodes[:, 2]))
+    gamma = 1./(1 + np.linalg.norm(nodes[:, 3] - nodes[:, 0])/
+            np.linalg.norm(nodes[:, 3] - nodes[:, 1]))
+    return (alpha, beta, gamma)
+
+
+def dphi_deta_quadratic_alt(xi, eta, nodes):
+    """
+    Calculates the dphi/deta vector for a 2nd order curved triangular element.
+
+    Parameters:
+        xi : paramteric coordinate, scalar
+        eta : parametric coordinate, scalar
+        nodes : six nodes of triangle as columns in 3x6 ndarray
+    Returns:
+        dphi_deta : dphi/deta vector as ndarray shape (6)
+    """
+    alpha, beta, gamma = calc_abg_alt(nodes)
+    dphi_deta = np.array([
+        alpha/(1-alpha) * ( 2 * eta/alpha  - 1 + (alpha - gamma)/(alpha * (1 - gamma) ) * xi ),
+        beta/(1-beta) * xi * ( (beta + gamma - 1)/(beta*gamma) ),
+        0.,
+        1/(gamma * (1 - gamma) ) * xi,
+        1/(beta * (1 - beta) ) * xi * -1,
+        1/(alpha * (1 - alpha) ) * (1 - 2 * eta - xi),
+    ])
+    dphi_deta[2] = -np.sum(dphi_deta)
+    return dphi_deta
+
+
+def pos_quadratic_alt(xi, eta, nodes):
+    """
+    position in a curved 6 node triangle as a function of eta and xi
+
+    Parameters:
+        eta : parametric coordinate, scalar
+        xi : paramteric coordinate, scalar
+        nodes : six nodes of triangle as columns in 3x6 ndarray
+    Returns:
+        x : output position (3,) ndarray
+    """
+    alpha, beta, gamma = calc_abg_alt(nodes)
+    phi = np.array([
+        alpha/(1-alpha) * eta * ( eta/alpha  - 1 + (alpha - gamma)/(alpha * (1 - gamma) ) * xi ),
+        beta/(1-beta) * xi * ( xi/beta  - 1 + (beta + gamma - 1)/(beta*gamma) * eta ),
+        0.,
+        1/(gamma * (1 - gamma) ) * eta * xi,
+        1/(beta * (1 - beta) ) * xi * (1 - eta - xi),
+        1/(alpha * (1 - alpha) ) * eta * (1 - eta - xi),
+    ])
+    phi[2] = 1. - np.sum(phi)
+
+    x = np.matmul(nodes, phi)
+    return x
+
+
+def dphi_dxi_quadratic_alt(xi, eta, nodes):
+    """
+    Calculates the dphi/dxi vector for a 2nd order curved triangular element.
+
+    Parameters:
+        xi : paramteric coordinate, scalar
+        eta : parametric coordinate, scalar
+        nodes : six nodes of triangle as columns in 3x6 ndarray
+    Returns:
+        dphi_dxi : dphi/dxi vector as ndarray shape (6)
+    """
+    alpha, beta, gamma = calc_abg_alt(nodes)
+    dphi_dxi = np.array([
+        alpha/(1-alpha) * eta * ( (alpha - gamma)/(alpha * (1 - gamma) ) ),
+        beta/(1-beta) * ( 2 * xi/beta  - 1 + (beta + gamma - 1)/(beta*gamma) * eta ),
+        0.,
+        1/(gamma * (1 - gamma) ) * eta,
+        1/(beta * (1 - beta) ) * (1 - eta - 2 * xi),
+        1/(alpha * (1 - alpha) ) * eta * -1,
+    ])
+    dphi_dxi[2] = -np.sum(dphi_dxi)
+    return dphi_dxi

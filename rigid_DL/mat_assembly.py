@@ -138,7 +138,7 @@ def make_mat_cp_qe(quad_mesh):
                 C[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
                 C[(3 * src_num):(3 * src_num + 3),
-                  (3 * src_num):(3 * src_num + 3)] -= sub_mat
+                 (3 * src_num):(3 * src_num + 3)] -= sub_mat
             # do nothing face_num == src_num, how it works out for constant elements
 
     for src_num in range(num_faces):
@@ -330,3 +330,69 @@ def make_sing_lp_qe_quad_func(x_0, node_num, singular_ind):
             else:
                 return (phi) * geo.stresslet(x, x_0)
     return quad_func
+
+
+### Alternative versions for testing ###
+def make_cp_qe_quad_func_alt(x_0):
+    """"
+    Makes the constant potential function that is integrated over
+    quadratic elements for the stiffness matrix
+    Version that makes function that takes in normal vector
+
+    Parameters:
+        x_0: the source point
+    """
+    def quad_func(xi, eta, n, nodes):
+        x = geo.pos_quadratic(xi, eta, nodes)
+        return geo.stresslet_n(x, x_0, n)
+    return quad_func
+
+
+def make_cp_qe_quad_func_alt2(x_0):
+    """"
+    Makes the constant potential function that is integrated over
+    quadratic elements for the stiffness matrix
+    Version that makes function that takes in normal vector
+
+    Parameters:
+        x_0: the source point
+    """
+    def quad_func(xi, eta, n, nodes):
+        x = geo.pos_linear(xi, eta, nodes[:,0:3])
+        return geo.stresslet_n(x, x_0, n)
+    return quad_func
+
+def make_mat_cp_qe_alt(quad_mesh):
+    """
+    Slow version for debugging, did not fix the problem.
+
+    Parameters:
+        quad_mesh : simple quadratic mesh input
+    Returns:
+        the stresslet matrix
+    """
+    num_faces = quad_mesh.faces.shape[0]
+    c_0 = 1. / (4. * np.pi)
+    C = np.zeros((3 * num_faces, 3 * num_faces))
+    for src_num in range(num_faces): # source points
+        src_center = quad_mesh.calc_tri_center(quad_mesh.get_nodes(quad_mesh.faces[src_num]))
+        for face_num in range(num_faces): # field points
+            face_nodes = quad_mesh.get_nodes(quad_mesh.faces[face_num])
+            if face_num != src_num:
+                sub_mat = gq.int_over_tri_quad_slow(
+                    make_cp_qe_quad_func_alt(src_center),
+                    face_nodes,
+                    quad_mesh.centroid,
+                    quad_mesh.calc_tri_center(face_nodes)
+                )
+                C[(3 * src_num):(3 * src_num + 3),
+                  (3 * face_num):(3 * face_num + 3)] += sub_mat
+                C[(3 * src_num):(3 * src_num + 3),
+                  (3 * src_num):(3 * src_num + 3)] -= sub_mat
+            # do nothing face_num == src_num, how it works out for constant elements
+        C[(3 * src_num):(3 * src_num + 3),
+          (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
+    C = np.dot(c_0, C)
+    return C
+
+

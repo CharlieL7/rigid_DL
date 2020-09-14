@@ -32,6 +32,7 @@ class simple_quad_mesh:
         self.surf_area = self.calc_surf_area()
         self.mom_inertia = self.calc_moment_inertia_tensor()
         self.dims = self.calc_ellip_dims()
+        print(self.dims)
 
 
     def make_linear_mesh(self):
@@ -73,7 +74,7 @@ class simple_quad_mesh:
         Gaussian quadrature
         """
         Nf = self.faces.shape[0]
-        normals = np.empty([Nf, 3, 7])
+        normals = np.empty([Nf, 3, 6])
         for i, face in enumerate(self.faces):
             nodes = self.get_nodes(face)
             tri_c = self.calc_tri_center(nodes)

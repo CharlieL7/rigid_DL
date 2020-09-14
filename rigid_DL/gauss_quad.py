@@ -5,6 +5,7 @@ Gaussian quadrature for abritrary f(xi, eta, nodes) function
 import numpy as np
 import rigid_DL.geometric as geo
 
+"""
 # Gaussian quadrature weights
 W = 1./60. * np.array([3., 8., 3., 8., 3., 8., 27.])
 # Gaussian quadrature points
@@ -17,6 +18,24 @@ PARA_PTS = [
     (0.0, 0.5),
     (1./3., 1./3.),
 ]
+
+"""
+# 6-point quadrature
+a = 0.816847572980459
+b = 0.445948490915965
+c = 0.108103018168070
+d = 0.091576213509771
+omega1 = 0.109951743655322
+omega2 = 0.223381589678011
+PARA_PTS = np.array([
+    (d, d),
+    (a, d),
+    (d, a),
+    (b, b),
+    (c, b),
+    (b, c)
+])
+W = np.array([omega1, omega1, omega1, omega2, omega2, omega2])
 
 
 def int_over_tri_lin(func, nodes, hs):
@@ -71,12 +90,12 @@ def int_over_tri_quad_n(func, nodes, n):
         func: function to integrate, must return (3,3,3) ndarray
                expecting f(eta, xi, nodes)
         nodes: 3x6 ndarray with nodes as column vectors
-        n: normal vectors at the seven quadrature points (3, 7) ndarray
+        n: normal vectors at the seven quadrature points (3, 6) ndarray
             (not normalized vectors, hs magnitude)
     Returns:
         integrated (function . n)
     """
-    f = np.empty([3, 3, 7])
+    f = np.empty([3, 3, 6])
     for i, (xi, eta) in enumerate(PARA_PTS):
         f[:, :, i] = np.dot(func(xi, eta, nodes), n[:, i])
     ret = 0.5 * np.dot(f, W)
@@ -91,9 +110,9 @@ def quad_n(nodes, xc, tri_c):
     Parameters:
         nodes: 3x6 ndarray with nodes as column vectors
     Returns:
-        normals: (3, 7) ndarray
+        normals: (3, 6) ndarray
     """
-    normals = np.empty([3, 7])
+    normals = np.empty([3, 6])
     for i, (xi, eta) in enumerate(PARA_PTS):
         e_xi = np.einsum("ij,j->i", nodes, geo.dphi_dxi_quadratic(xi, eta, nodes))
         e_eta = np.einsum("ij,j->i", nodes, geo.dphi_deta_quadratic(xi, eta, nodes))
@@ -119,6 +138,7 @@ def int_over_tri_quad_slow(func, nodes, xc, tri_c):
         tri_c: triangle center
     Returns:
         integrated function
+    """
     """
     # Gaussian quadrature weights
     w = 1./60. * np.array([3., 8., 3., 8., 3., 8., 27.])
@@ -151,7 +171,6 @@ def int_over_tri_quad_slow(func, nodes, xc, tri_c):
         (b, c)
     ])
     w = np.array([omega1, omega1, omega1, omega2, omega2, omega2])
-    """
 
     f = []
     for (xi, eta) in para_pts:
@@ -165,7 +184,7 @@ def int_over_tri_quad_slow(func, nodes, xc, tri_c):
         n_unit = n / h_s
         f.append(func(xi, eta, n_unit, nodes) * h_s)
     f = np.array(f)
-    f = np.transpose(np.array(f)) # make (3,7)
+    f = np.transpose(np.array(f)) # make (3,6)
 
     ret = 0.5 * np.dot(f, w)
     return ret

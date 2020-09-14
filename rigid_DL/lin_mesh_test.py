@@ -30,17 +30,24 @@ def main():
     t1 = time.time()
     print("{}, before construct stiffness matrix".format(t1 - t0))
 
-    C = mata.make_mat_cp_le(mesh) # stiffness matrix
-
+    C = mata.make_mat_lp_le(mesh) # stiffness matrix
+    
+    """
     v_cnst = np.array([1, 0, 0])
-    v_trans_in = np.zeros((mesh.faces.shape[0], 1), dtype=v_cnst.dtype) + v_cnst
+    v_trans_in = np.zeros((mesh.vertices.shape[0], 1), dtype=v_cnst.dtype) + v_cnst
     v_trans_out = np.dot(C, v_trans_in.flatten('C'))
     v_trans_out = v_trans_out.reshape(v_trans_in.shape, order='C')
 
     E_d, E_c = efun.E_12(mesh)
-    v_12_in = efun.make_cp_le_lin_vels(E_d, E_c, mesh)
+    v_12_in = efun.make_lp_le_lin_vels(E_d, E_c, mesh)
     v_12_out = np.dot(C, v_12_in.flatten('C'))
     v_12_out = v_12_out.reshape(v_12_in.shape, order='C')
+
+    """
+    E_d, E_c = efun.diag_eigvec("+", mesh)
+    v_p_in = efun.make_cp_le_lin_vels(E_d, E_c, mesh)
+    v_p_out = np.dot(C, v_p_in.flatten("C"))
+    v_p_out = v_p_out.reshape(v_p_in.shape, order="C")
 
     t2 = time.time()
     print("{}, matrix forming and dotting walltime".format(t2 - t1))
@@ -50,6 +57,7 @@ def main():
     #io.write_eigvec(v, "{}_eigvec.csv".format(out_name))
     #io.write_vel(v_trans_in, v_trans_out, "{}_trans_vel.csv".format(out_name))
     #io.write_vel(v_12_in, v_12_out, "{}_12_vel.csv".format(out_name))
+    io.write_vel(v_p_in, v_p_out, "{}_p_vel.csv".format(out_name))
 
     t3 = time.time()
     print("{}, write out walltime".format(t3 - t2))

@@ -167,7 +167,7 @@ def make_mat_lp_qe(quad_mesh):
         face_nodes = quad_mesh.get_nodes(quad_mesh.faces[face_num])
         face_n = quad_mesh.quad_n[face_num]
         for src_num in range(num_verts): # source points
-            src_pt = quad_mesh.vertices[src_num]
+            src_pt = quad_mesh.lin_verts[src_num]
             is_singular, local_singular_ind = quad_mesh.check_in_face(src_num, face_num)
 
             if is_singular: # singular triangle
@@ -280,7 +280,7 @@ def make_sing_lp_le_quad_func(n, x_0, node_num, singular_ind):
     Makes the sinuglar linear potential, linear element function
     that is integrated for the stiffness matrix
     
-    NOTE: This actually might almost always evaluate to zero because the \hat{x} is perpendicular to the normal vector
+    NOTE: This always evaluates to zero because the \hat{x} is perpendicular to the normal vector
     for linear elements.
 
     Parameters:
@@ -323,11 +323,15 @@ def make_sing_lp_qe_quad_func(x_0, node_num, singular_ind):
             if (phi - 1) == 0: # getting around division by 0
                 return np.zeros([3, 3, 3])
             else:
+                if np.linalg.norm(x - x_0) < 1e-6:
+                    print("nearly singular lp qe x_hat error")
                 return (phi - 1) * geo.stresslet(x, x_0)
         else:
             if phi == 0:
                 return np.zeros([3, 3, 3])
             else:
+                if np.linalg.norm(x - x_0) < 1e-6:
+                    print("nearly singular lp qe x_hat error")
                 return (phi) * geo.stresslet(x, x_0)
     return quad_func
 

@@ -123,6 +123,8 @@ def stresslet(x, x_0):
     """
     x_hat = x - x_0
     r = np.linalg.norm(x_hat)
+    if r < 1e-6:
+        print("small x_hat length detected in stresslet(): {}".format(r))
     T_ijk = -6. * np.einsum("i,j,k->ijk", x_hat, x_hat, x_hat) / (r**5.)
     return T_ijk
 
@@ -141,6 +143,8 @@ def stresslet_n(x, x_0, n):
     """
     x_hat = x - x_0
     r = np.linalg.norm(x_hat)
+    if r < 1e-6:
+        print("small x_hat length detected in stresslet_n(): {}".format(r))
     S_ij = -6. * np.outer(x_hat, x_hat) * np.dot(x_hat, n) / (r**5.)
     return S_ij
 

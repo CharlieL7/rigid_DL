@@ -142,19 +142,23 @@ def hyper_xy():
 def diag_eigvec(pm, mesh):
     dims = mesh.dims
     kapp = ev.kappa_pm(pm, dims)
-    alpha_pp_0 = ev.ellip_pp_cnst(dims, "alpha")
-    beta_pp_0 = ev.ellip_pp_cnst(dims, "beta")
-    gamma_pp_0 = ev.ellip_pp_cnst(dims, "gamma")
-    d = beta_pp_0 * gamma_pp_0 + gamma_pp_0 * alpha_pp_0 + alpha_pp_0 * beta_pp_0
-    A = np.array(
+    app_0, bpp_0, gpp_0 = ev.ellip_pp_cnst(dims)
+    d = bpp_0 * gpp_0 + gpp_0 * app_0 + app_0 * bpp_0
+    M = np.array(
         [
-            [(kapp - 1) + (4*alpha_pp_0)/(3*d), -(2*beta_pp_0)/(3*d), -(2*gamma_pp_0)/(3 * d)],
-            [-(2*alpha_pp_0)/(3*d), (kapp - 1) + (4*beta_pp_0)/(3*d), -(2*gamma_pp_0)/(3*d)],
+            [(kapp - 1) + (4*app_0)/(3*d), -(2*bpp_0)/(3*d), -(2*gpp_0)/(3*d)],
+            [-(2*app_0)/(3*d), (kapp - 1) + (4*bpp_0)/(3*d), -(2*gpp_0)/(3*d)],
             [1., 1., 1.]
         ]
     )
-    e = null_space(A)
-    E_d = np.array([[e[0], 0, 0], [0, e[1], 0], [0, 0, e[2]]])
+    if np.linalg.matrix_rank(M) != 2:
+        print(M)
+        raise RuntimeError("Diagonal eigenfunction failed; full rank matrix")
+    e = null_space(M).reshape((3,))
+    E = e * np.identity(3)
+    A, B, C = ev.ABC_const(E, dims)
+    D = 4. * np.identity(3) * np.array([A, B, C])
+    E_d = D - E
     E_c = np.array([0, 0, 0])
     return (E_d, E_c)
 

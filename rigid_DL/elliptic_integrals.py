@@ -6,20 +6,21 @@ import sys
 import numpy as np
 from scipy.integrate import quad
 
-def ellip_cnst(dims, version):
+def ellip_cnst(dims):
     """
     Base elliptical integral at the surface
 
     Parameters:
         dims : elliptical dimensions (a, b, c)
-        version : which constant, expecting "alpha", "beta", or "gamma"
     Returns:
         float, the constant
     """
     assert len(dims) == 3
-    i = get_start_ind(version)
     abc = dims[0] * dims[1] * dims[2]
-    return abc * quad(ellip_integrand, 0., np.inf, args=(dims, i))[0]
+    cons = np.empty(3)
+    for i in range(3):
+        cons[i] = abc * quad(ellip_integrand, 0., np.inf, args=(dims, i))[0]
+    return cons
 
 
 def ellip_integrand(t, dims, start_ind):
@@ -30,14 +31,21 @@ def ellip_integrand(t, dims, start_ind):
     return ((dims[start_ind]**2 + t) * delta_t)**(-1)
 
 
-def ellip_p_cnst(dims, version):
+def ellip_p_cnst(dims):
     """
     Primed elliptical integral at the surface
+
+    Parameters:
+        dims: ellipsoid dimenisons
+    Returns:
+        [alpha, beta, gamma]: the constants as ndarray
     """
     assert len(dims) == 3
-    i = get_start_ind(version)
     abc = dims[0] * dims[1] * dims[2]
-    return abc * quad(ellip_p_integrand, 0, np.inf, args=(dims, i))[0]
+    cons = np.empty(3)
+    for i in range(3):
+        cons[i] = abc * quad(ellip_p_integrand, 0, np.inf, args=(dims, i))[0]
+    return cons
 
 
 def ellip_p_integrand(t, dims, i):
@@ -58,11 +66,22 @@ def ellip_p_integrand(t, dims, i):
     return tmp
 
 
-def ellip_pp_cnst(dims, version):
+def ellip_pp_cnst(dims):
+    """
+    Constants based on the ellipsoid dimensions, alpha, beta, gamma
+
+    Parameters:
+        dims: ellipsoid dimensions
+    Returns:
+        [alpha, beta, gamma]: the constants as ndarray
+    """
     assert len(dims) == 3
-    i = get_start_ind(version)
     abc = dims[0] * dims[1] * dims[2]
-    return abc * quad(ellip_pp_integrand, 0, np.inf, args=(dims, i))[0]
+    cons = np.empty(3)
+    for i in range(3):
+        q = quad(ellip_pp_integrand, 0, np.inf, args=(dims, i))
+        cons[i] = (abc * q[0])
+    return cons
 
 
 def ellip_pp_integrand(t, dims, i):
@@ -81,15 +100,3 @@ def ellip_pp_integrand(t, dims, i):
         delta_t
     )
     return tmp
-
-
-def get_start_ind(version):
-    if version == "alpha":
-        start_ind = 0
-    elif version == "beta":
-        start_ind = 1
-    elif version == "gamma":
-        start_ind = 2
-    else:
-        sys.exit("Unrecognized version input in get_start_ind()")
-    return start_ind

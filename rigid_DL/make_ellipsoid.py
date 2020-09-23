@@ -21,6 +21,7 @@ def main():
     verts, faces = make_icosahedron()
     if args.geodesic:
         verts, faces = geodesic_div(verts, faces, num_subdiv)
+        #proj_usphere(verts)
     else:
         i = 0
         while i < num_subdiv:
@@ -69,13 +70,13 @@ def subdiv_mesh(verts, faces):
     for tri in faces:
         edge_set = (
             frozenset((tri[0], tri[1])),
-            frozenset((tri[2], tri[1])),
-            frozenset((tri[0], tri[2]))
+            frozenset((tri[1], tri[2])),
+            frozenset((tri[2], tri[0]))
         )
         verts_tup = (
             (verts[tri[0]], verts[tri[1]]),
-            (verts[tri[2]], verts[tri[1]]),
-            (verts[tri[0]], verts[tri[2]]),
+            (verts[tri[1]], verts[tri[2]]),
+            (verts[tri[2]], verts[tri[0]]),
         )
         # vertices in original tri
         x_i = [tri[0], tri[1], tri[2], 0., 0., 0.,]
@@ -107,34 +108,37 @@ def geodesic_div(verts, faces, n):
         faces: triangular faces
         n: number segments to split each edge into
     """
-    assert n >= 1
+    assert n > 1
     # track edges divided: "edge as tuple of indicies": indicies of edge nodes incl. original
     # not the same as in subdiv_mesh
     edge_cache = dict()
     new_verts = list(verts)
     new_faces = []
     for tri in faces:
-        edge_set = (# frozenset for hashing, order vertx do not matter
+        edge_set = (# frozenset for hashing, order vertxx do not matter
             frozenset((tri[0], tri[1])),
-            frozenset((tri[2], tri[1])),
-            frozenset((tri[0], tri[2])),
+            frozenset((tri[1], tri[2])),
+            frozenset((tri[2], tri[0])),
         )
         edge_ori = (
             (tri[0], tri[1]),
             (tri[1], tri[2]),
-            (tri[0], tri[2]),
+            (tri[2], tri[0]),
         )
         verts_tup = (
             (verts[tri[0]], verts[tri[1]]),
-            (verts[tri[2]], verts[tri[1]]),
-            (verts[tri[0]], verts[tri[2]]),
+            (verts[tri[1]], verts[tri[2]]),
+            (verts[tri[2]], verts[tri[0]]),
         )
         # make or get divided edge nodes
         e = [] # divided edge vertex indicies
         for j, ed_set in enumerate(edge_set):
             if ed_set not in edge_cache:
-                new_inds = add_n_pts(new_verts, verts_tup[j], n)
-                div_edge = np.concatenate(edge_ori[j][0], new_inds, edge_ori[j][1])
+                new_inds = add_n_segments(new_verts, verts_tup[j], n)
+                div_edge = np.zeros(n + 1, dtype=np.uint32)
+                div_edge[0] = edge_ori[j][0]
+                div_edge[1:n] = new_inds
+                div_edge[n] = edge_ori[j][1]
                 edge_cache[ed_set] = div_edge
             else:
                 div_edge = edge_cache[ed_set]
@@ -146,16 +150,20 @@ def geodesic_div(verts, faces, n):
         rows = [] # jagged arrays building the triangle up (vert indicies)
         rows.append(e[0]) # bottom row
         m = n - 1 # row divisions counter
-        for r in range(1, n+1):
-            ind_0 = e[2][-r]
+        for r in range(1, n):
+            ind_0 = e[2][-(r+1)]
             ind_1 = e[1][r]
             x_0 = new_verts[ind_0]
             x_1 = new_verts[ind_1]
-            new_inds = add_n_pts(new_verts, [x_0, x_1], m)
-            div_row = np.concatenate(ind_0, new_inds, ind_1)
+            new_inds = add_n_segments(new_verts, [x_0, x_1], m)
+            div_row = np.array([ind_0] + new_inds + [ind_1])
+            div_row = np.zeros(m + 1, dtype=np.uint32)
+            div_row[0] = ind_0
+            div_row[1:m] = new_inds
+            div_row[m] = ind_1
             rows.append(div_row)
             m -= 1
-
+        rows.append([e[2][0]]) # top
         # iterate over rows to make all faces
         g = n # tri to make counter
         for i, row in enumerate(rows[:-1]): # till second to last row
@@ -174,10 +182,10 @@ def proj_usphere(verts):
     Project verticies onto the unit sphere
     """
     norms = np.linalg.norm(verts, axis=1)
-    verts /= norms
+    verts /= norms[:, np.newaxis]
 
 
-def add_n_pts(all_verts, verts, n):
+def add_n_segments(all_verts, verts, n):
     """
     Splits line between two vertices into n segments.
     Works in place on the vertex list.
@@ -196,7 +204,6 @@ def add_n_pts(all_verts, verts, n):
     for v in calc_n_split(n, verts):
         all_verts.append(v)
     return new_inds
-
 
 
 def make_icosahedron():
@@ -277,10 +284,12 @@ def calc_n_split(n, pts):
     Returns:
         new_pts: new points in a list of  (3,) ndarray
     """
-    assert(n >= 1)
+    assert n >= 1
     new_verts = []
+    a = pts[0]
+    b = pts[1]
     for i in range(1, n):
-        new_verts.append((pts[0] + pts[1]) * (i/(n)))
+        new_verts.append(a + (b - a) * (i / n))
     return new_verts
 
 

@@ -37,6 +37,7 @@ class simple_linear_mesh:
         # eigensolutions to translation and rotation
         self.v = np.identity(3) / np.sqrt(self.surf_area)
         self.w = self.calc_rotation_vectors() # rows are the vectors
+        print(self.dims)
 
 
     @classmethod

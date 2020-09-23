@@ -101,7 +101,7 @@ def E_12(mesh):
     return (E_d, E_c)
 
 
-def E_13(mesh):
+def E_31(mesh):
     E_d = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
     a, _b, c = mesh.dims
     E_c = (c**2 - a**2)/(c**2 + a**2) * E_d[0, 2] * np.array([0, 1, 0])

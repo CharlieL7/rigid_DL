@@ -5,21 +5,6 @@ Gaussian quadrature for abritrary f(xi, eta, nodes) function
 import numpy as np
 import rigid_DL.geometric as geo
 
-"""
-# Gaussian quadrature weights
-W = 1./60. * np.array([3., 8., 3., 8., 3., 8., 27.])
-# Gaussian quadrature points
-PARA_PTS = [
-    (0.0, 0.0),
-    (0.5, 0.0),
-    (1.0, 0.0),
-    (0.5, 0.5),
-    (0.0, 1.0),
-    (0.0, 0.5),
-    (1./3., 1./3.),
-]
-
-"""
 # 6-point quadrature
 a = 0.816847572980459
 b = 0.445948490915965

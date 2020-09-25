@@ -163,36 +163,3 @@ def diag_eigvec(pm, mesh):
     return (E_d, E_c)
 
 
-def calc_ROS_eigs(field, dims):
-    """
-    Calculates the 5 matricies that when dotted with position are
-    the eigenvectors of a rate-of-strain flow field
-
-    Parameters:
-        field : the input ROS flow field
-        dims : elliptical dimensions, (a, b, c)
-    Returns:
-        (Ee1, Ee2, Ee3, Ee4, Ee5) : tuple of the five matrix-eigenvalue pairs
-            for the eigenvectors where Ee = {"eval":, "emat":}
-    """
-    E1 = np.array([
-        [0, field[0, 1], 0],
-        [field[1, 0], 0, 0],
-        [0, 0, 0]]
-    ) # NOT DONE, NEED ROTATIONAL TERM
-    E2 = np.array([
-        [0, 0, field[0, 2]],
-        [0, 0, 0],
-        [field[2, 0], 0, 0]]
-    )
-    E3 = np.array([
-        [0, 0, 0],
-        [0, 0, field[1, 2]],
-        [0, field[2, 1], 0]]
-    )
-    #Ee1 = {"eval":lambda_12(dims), "emat":E1}
-    #Ee2 = {"eval":lambda_13(dims), "emat":E2}
-    #Ee3 = {"eval":lambda_23(dims), "emat":E3}
-    #kapp_p = kappa_pm("+", dims)
-    #kapp_n = kappa_pm("-", dims)
-    #TODO

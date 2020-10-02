@@ -111,7 +111,7 @@ def main():
                 "normalized_err_m": [percent_err_m],
             }
         )
-    elif pot_type == Pot_Type.LINEAR and mesh_type != Mesh_Type.QUADRATIC:
+    elif pot_type == Pot_Type.LINEAR:
         mesh_io = meshio.Mesh(
             mesh.vertices,
             cells,
@@ -137,34 +137,6 @@ def main():
                 "normalized_err_m": percent_err_m,
             }
         )
-    elif pot_type == Pot_Type.LINEAR and mesh_type == Mesh_Type.QUADRATIC:
-        mesh_io = meshio.Mesh(
-            mesh.lin_verts,
-            cells,
-            point_data={
-                "abs_err_12": abs_err_12,
-                "v_in_12": v_in_12,
-                "normalized_err_12": percent_err_12,
-
-                "abs_err_23": abs_err_23,
-                "v_in_23":v_in_23,
-                "normalized_err_23": percent_err_23,
-
-                "abs_err_31": abs_err_31,
-                "v_in_31": v_in_31,
-                "normalized_err_31": percent_err_31,
-
-                "abs_err_p": abs_err_p,
-                "v_in_p": v_in_p,
-                "normalized_err_p": percent_err_p,
-
-                "abs_err_m": abs_err_m,
-                "v_in_m": v_in_m,
-                "normalized_err_m": percent_err_m,
-            }
-        )
-
-
     meshio.write("{}_out.vtk".format(out_name), mesh_io, file_format="vtk")
 
 
@@ -172,6 +144,7 @@ def eigval_err(mesh, pot_type, mesh_type, C, eigval, E_d, E_c):
     """
     Linear eigenvalue/eigenvector error function
     """
+    tol = 1e-15 #lower bound for norm about equal to zero
     v_fun_map = {
         (Pot_Type.CONSTANT, Mesh_Type.LINEAR): efun.make_cp_le_lin_vels,
         (Pot_Type.LINEAR, Mesh_Type.LINEAR): efun.make_lp_le_lin_vels,
@@ -182,13 +155,29 @@ def eigval_err(mesh, pot_type, mesh_type, C, eigval, E_d, E_c):
     lambda_mat = eigval * np.identity(C.shape[0])
     g = np.dot((lambda_mat - C), v_in.flatten("C"))
     g = g.reshape(v_in.shape, order="C")
-    err = np.sqrt(np.einsum("ij,ij->i", g, g))
-    avg_v_in_norm = calc_avg_v_in_norm(mesh, mesh_type, E_d, E_c)
-
-    return (err, v_in, err / avg_v_in_norm)
+    err_arr = np.linalg.norm(g, axis=1)
+    v_in_norms = np.linalg.norm(v_in, axis=1)
+    # only divides when v_in_norm is > than tol, otherwise sets to zero
+    per_err_arr = np.divide(err_arr, v_in_norms, out=np.zeros_like(err_arr), where=v_in_norms>tol)
+    if (pot_type == Pot_Type.LINEAR and mesh_type == Mesh_Type.QUADRATIC):
+        # fill unused verticies with lp_qe parameterization with zeros
+        num_quad_verts = mesh.vertices.shape[0]
+        quad_err_arr = np.zeros(num_quad_verts)
+        quad_v_in_arr = np.zeros((num_quad_verts, 3))
+        quad_per_err_arr = np.zeros(num_quad_verts)
+        for i, err in enumerate(err_arr):
+            quad_ind = mesh.lin_to_quad_map[i]
+            quad_err_arr[quad_ind] = err
+            quad_v_in_arr[quad_ind] = v_in[i]
+            quad_per_err_arr[quad_ind] = per_err_arr[i]
+        return(quad_err_arr, quad_v_in_arr, quad_per_err_arr)
+    return (err_arr, v_in, per_err_arr)
 
 
 def calc_avg_v_in_norm(mesh, mesh_type, E_d, E_c):
+    """
+    Surface average of eigenfunction
+    """
     avg_v_in_norm = 0.
     if mesh_type == Mesh_Type.LINEAR:
         for i, face in enumerate(mesh.faces):

@@ -25,6 +25,8 @@ class simple_quad_mesh:
         # linear mesh from quadratic mesh for linear potentials
         self.lin_verts = None
         self.lin_faces = None
+        self.lin_to_quad_map = None
+        self.quad_to_lin_map = None
         self.make_linear_mesh()
         self.centroid = self.calc_mesh_centroid_pc()
         self.quad_n = self.calc_all_quad_n()
@@ -55,15 +57,15 @@ class simple_quad_mesh:
             tmp_verts.append(self.vertices[vert_num])
         self.lin_verts = np.array(tmp_verts)
 
-        lin_to_quad_map = {}
+        self.lin_to_quad_map = {}
         for i, v_num in enumerate(lin_vert_nums):
-            lin_to_quad_map[i] = v_num
-        quad_to_lin_map = dict((v, k) for k, v in lin_to_quad_map.items()) # values must be unique
+            self.lin_to_quad_map[i] = v_num
+        self.quad_to_lin_map = dict((v, k) for k, v in self.lin_to_quad_map.items()) # values must be unique
         loc_lin_faces = []
         for lin_face in tmp_faces:
             arr = np.empty(3)
             for i, quad_node_num in enumerate(lin_face):
-                arr[i] = quad_to_lin_map[quad_node_num]
+                arr[i] = self.quad_to_lin_map[quad_node_num]
             loc_lin_faces.append(arr)
         self.lin_faces = np.array(loc_lin_faces, dtype=int)
 

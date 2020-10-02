@@ -5,6 +5,7 @@ Eigenfunctions for the ellipsoidal particle
 import numpy as np
 from scipy.linalg import null_space
 import rigid_DL.eigenvalues as ev
+import rigid_DL.geometric as geo
 
 def make_cp_le_lin_vels(E_d, E_c, mesh):
     """
@@ -86,6 +87,27 @@ Parameters:
     return v_list
 
 
+def make_lin_psi_func(E_d, E_c):
+    """
+    Makes the eigenvector function to integrate over the surface
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_linear(xi, eta, nodes)
+        return np.linalg.norm(np.dot(E_d, x) - np.cross(E_c, x))
+    return quad_func
+
+
+def make_quad_psi_func(E_d, E_c):
+    """
+    Makes the eigenvector function to integrate over the surface
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_quadratic(xi, eta, nodes)
+        return np.linalg.norm(np.dot(E_d, x) - np.cross(E_c, x))
+    return quad_func
+
+
+
 def E_12(mesh):
     """
     Off diagonal (12) rate of strain field eigenfunction
@@ -161,5 +183,3 @@ def diag_eigvec(pm, mesh):
     E_d = D - E
     E_c = np.array([0, 0, 0])
     return (E_d, E_c)
-
-

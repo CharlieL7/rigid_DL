@@ -9,6 +9,7 @@ import rigid_DL.simple_linear_mesh as SLM
 import rigid_DL.mat_assembly as mata
 import rigid_DL.eigenfunctions as efun
 import rigid_DL.eigenvalues as eigvals
+import rigid_DL.gauss_quad as gq
 
 def main():
     parser = argp.ArgumentParser(description="constant potential, linear element eigenvalue tests")
@@ -34,47 +35,47 @@ def main():
 
     E_d, E_c = efun.E_12(slm)
     eigval_12 = eigvals.lambda_12(expected_dims)
-    mse_err_12, v_in_norm_12, err_12 = eigval_err(slm, C, eigval_12, E_d, E_c)
+    mse_err_12, v_in_12, err_12 = eigval_err(slm, C, eigval_12, E_d, E_c)
 
     E_d, E_c = efun.E_23(slm)
     eigval_23 = eigvals.lambda_23(expected_dims)
-    mse_err_23, v_in_norm_23, err_23 = eigval_err(slm, C, eigval_23, E_d, E_c)
+    mse_err_23, v_in_23, err_23 = eigval_err(slm, C, eigval_23, E_d, E_c)
 
     E_d, E_c = efun.E_31(slm)
     eigval_31 = eigvals.lambda_31(expected_dims)
-    mse_err_31, v_in_norm_31, err_31 = eigval_err(slm, C, eigval_31, E_d, E_c)
+    mse_err_31, v_in_31, err_31 = eigval_err(slm, C, eigval_31, E_d, E_c)
 
     E_d, E_c = efun.diag_eigvec("+", slm)
     eigval_p = eigvals.lambda_pm("+", expected_dims)
-    mse_err_p, v_in_norm_p, err_p = eigval_err(slm, C, eigval_p, E_d, E_c)
+    mse_err_p, v_in_p, err_p = eigval_err(slm, C, eigval_p, E_d, E_c)
 
     E_d, E_c = efun.diag_eigvec("-", slm)
     eigval_m = eigvals.lambda_pm("-", expected_dims)
-    mse_err_m, v_in_norm_m, err_m = eigval_err(slm, C, eigval_m, E_d, E_c)
+    mse_err_m, v_in_m, err_m = eigval_err(slm, C, eigval_m, E_d, E_c)
 
     mesh_io = meshio.Mesh(
         slm.vertices,
         cells,
         cell_data={
             "mse_err_12": [mse_err_12],
-            "v_in_norm_12": [v_in_norm_12],
-            "percent_err_12": [err_12],
+            "v_in_12": [v_in_12],
+            "normalized_err_12": [err_12],
 
             "mse_err_23": [mse_err_23],
-            "v_in_norm_23": [v_in_norm_23],
-            "percent_err_23": [err_23],
+            "v_in_23": [v_in_23],
+            "normalized_err_23": [err_23],
 
             "mse_err_31": [mse_err_31],
-            "v_in_norm_31": [v_in_norm_31],
-            "percent_err_31": [err_31],
+            "v_in_31": [v_in_31],
+            "normalized_err_31": [err_31],
 
             "mse_err_p": [mse_err_p],
-            "v_in_norm_p": [v_in_norm_p],
-            "percent_err_p": [err_p],
+            "v_in_p": [v_in_p],
+            "normalized_err_p": [err_p],
 
             "mse_err_m": [mse_err_m],
-            "v_in_norm_m": [v_in_norm_m],
-            "percent_err_m": [err_m],
+            "v_in_m": [v_in_m],
+            "normalized_err_m": [err_m],
         }
     )
     meshio.write("{}_out.vtk".format(out_name), mesh_io, file_format="vtk")
@@ -93,8 +94,18 @@ def eigval_err(mesh, C, eigval, E_d, E_c):
     g = np.dot((lambda_mat - C), v_in.flatten("C"))
     g = g.reshape(v_in.shape, order="C")
     MSE = 1/3. * np.einsum("ij,ij->i", g, g)
-    v_in_norms = np.einsum("ij,ij->i", v_in, v_in)
-    return (MSE, v_in_norms, MSE / v_in_norms)
+
+    avg_v_in_norm = 0.
+    for i, face in enumerate(mesh.faces):
+        nodes = mesh.get_nodes(face)
+        avg_v_in_norm += gq.int_over_tri_lin(
+            efun.make_lin_psi_func(E_d, E_c),
+            nodes,
+            mesh.hs[i],
+        )
+    avg_v_in_norm /= mesh.surf_area
+
+    return (MSE, v_in, MSE / avg_v_in_norm)
 
 
 def trans_eigval_err(mesh, C):

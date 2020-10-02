@@ -366,6 +366,7 @@ def make_cp_qe_quad_func_alt2(x_0):
         return geo.stresslet_n(x, x_0, n)
     return quad_func
 
+
 def make_mat_cp_qe_alt(quad_mesh):
     """
     Slow version for debugging, did not fix the problem.

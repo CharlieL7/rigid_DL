@@ -109,6 +109,11 @@ def quad_n(nodes, xc, tri_c):
     return normals
 
 
+# ///////////////
+# DEBUG STUFF
+# ///////////////
+
+
 def int_over_tri_quad_slow(func, nodes, xc, tri_c):
     """
     Integrate a function over a curved triangle surface using Gaussian quadrature.

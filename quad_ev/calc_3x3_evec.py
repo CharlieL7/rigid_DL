@@ -39,7 +39,7 @@ def calc_3x3_evec(dims, kappa):
 
     D = B @ C_inv
     psi = null_space(D)
-    print(psi)
+    return psi
 
 
 def calc_3x3_eval(dims):
@@ -64,10 +64,14 @@ def calc_3x3_eval(dims):
 def main():
     np.set_printoptions(precision=15)
     dims = [2, 1, 1]
-    kappa = -1.837384821016909
-    calc_3x3_evec(dims, kappa)
-    #kappa_vec = calc_3x3_eval(dims)
-    #print(kappa_vec.real)
+    kappa_vec = calc_3x3_eval(dims)
+    evecs = []
+    for kappa in kappa_vec:
+        evecs.append(calc_3x3_evec(dims, kappa))
+
+    print("eigenvalues: {}".format(kappa_vec))
+    for evec in evecs:
+        print("eigenvector:\n{}".format(evec))
 
 
 if __name__ == "__main__":

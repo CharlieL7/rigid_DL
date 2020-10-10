@@ -6,6 +6,7 @@ import numpy as np
 from scipy.linalg import null_space
 import rigid_DL.eigenvalues as ev
 import rigid_DL.geometric as geo
+import rigid_DL.elliptic_integrals as e_int
 
 def make_cp_le_lin_vels(E_d, E_c, mesh):
     """
@@ -162,6 +163,16 @@ def hyper_xy():
 
 
 def diag_eigvec(pm, mesh):
+    """
+    Calculates the eigenfunctions associated with the diagonal terms
+    of the linear rate of strain field.
+
+    Parameters:
+        pm: the plus or minus eigenvalue
+        mesh: mesh data structure
+    Returns:
+        E_d and E_c matricies for dotting with position
+    """
     dims = mesh.dims
     kapp = ev.kappa_pm(pm, dims)
     app_0, bpp_0, gpp_0 = ev.ellip_pp_cnst(dims)
@@ -183,3 +194,45 @@ def diag_eigvec(pm, mesh):
     E_d = D - E
     E_c = np.array([0, 0, 0])
     return (E_d, E_c)
+
+
+def calc_3x3_evec(dims, kappa):
+    """
+    Calculates the H^(1) vector associated with the eigenvector of the quadratic flow
+    for the 3x3 system.
+
+    Parameters:
+        dims: ellipsoidal dimensions (a > b > c)
+        kappa: kappa value associated with the eigenvalue to get the eigenvector for
+    Returns:
+        the H^(1) vector which is double dotted with position to get the disturbance
+        velocity
+    """
+    K_12, K_23, K_13 = e_int.ellip_K_ij(dims)
+    K_123 = e_int.ellip_K_123(dims)
+    a, b, c = dims
+
+    B = np.array([
+        [2*(K_123*a**3*b*c*(-b**2*kappa + b**2 - c**2*kappa + c**2) - 2)/(a*b*c),
+            2*b**2*(-K_123*b**2*kappa + K_123*b**2 - K_123*c**2*kappa + K_123*c**2 + K_13*kappa - K_13),
+            2*c**2*(K_12*kappa - K_12 - K_123*b**2*kappa + K_123*b**2 - K_123*c**2*kappa + K_123*c**2)],
+
+        [2*a**2*(-K_123*a**2*kappa + K_123*a**2 - K_123*c**2*kappa + K_123*c**2 + K_23*kappa - K_23),
+            2*(K_123*a*b**3*c*(-a**2*kappa + a**2 - c**2*kappa + c**2) - 2)/(a*b*c),
+            2*c**2*(K_12*kappa - K_12 - K_123*a**2*kappa + K_123*a**2 - K_123*c**2*kappa + K_123*c**2)],
+
+        [2*a**2*(-K_123*a**2*kappa + K_123*a**2 - K_123*b**2*kappa + K_123*b**2 + K_23*kappa - K_23),
+            2*b**2*(-K_123*a**2*kappa + K_123*a**2 - K_123*b**2*kappa + K_123*b**2 + K_13*kappa - K_13),
+            2*(K_123*a*b*c**3*(-a**2*kappa + a**2 - b**2*kappa + b**2) - 2)/(a*b*c)]
+    ])
+
+    C = np.array([
+        [K_123*a**2 + K_23, K_123*b**2 - K_13, -K_12 + K_123*c**2],
+        [K_123*a**2 - K_23, K_123*b**2 + K_13, -K_12 + K_123*c**2],
+        [K_123*a**2 - K_23, K_123*b**2 - K_13, K_12 + K_123*c**2]
+    ])
+    C_inv = np.linalg.inv(C)
+
+    D = B @ C_inv
+    H = null_space(D)
+    return H

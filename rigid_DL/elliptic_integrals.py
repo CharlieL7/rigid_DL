@@ -100,3 +100,61 @@ def ellip_pp_integrand(t, dims, i):
         delta_t
     )
     return tmp
+
+
+# Reformatted stuff for quadratic eigenfunctions
+
+
+def ellip_K_ij(dims):
+    """
+    Alternative version of primed elliptical integral at the surface
+    following notation in Martin 2019
+
+    Parameters:
+        dims: ellipsoid dimenisons
+    Returns:
+        [K_12, K_23, K_13]: the constants as ndarray
+    """
+    assert len(dims) == 3
+    cons = np.empty(3)
+    for i in range(3):
+        cons[i] = quad(K_ij_inte, 0, np.inf, args=(dims, i))[0]
+    return cons
+
+
+def K_ij_inte(t, dims, i):
+    """
+    Integrand for the K_ij elliptical integral
+
+    Parameters:
+        t : dependent variable
+        dims : ellipsoidal dimensions
+        i : starting index for dimension (0 = K_12, 1 = K_23, 2 = K_13)
+    """
+    delta_t = np.sqrt((dims[0]**2 + t) * (dims[1]**2 + t) * (dims[2]**2 + t))
+    tmp = (
+        (dims[(i) % 3]**2 + t) *
+        (dims[(i+1) % 3]**2 + t) *
+        delta_t
+    )**(-1)
+    return tmp
+
+
+def ellip_K_123(dims):
+    """
+    Other version seen in Martin 2019
+    """
+    assert len(dims) == 3
+    cons = quad(K_123_inte, 0, np.inf, args=(dims))[0]
+    return cons
+
+
+def K_123_inte(t, dims):
+    delta_t = np.sqrt((dims[0]**2 + t) * (dims[1]**2 + t) * (dims[2]**2 + t))
+    tmp = (
+        (dims[0]**2 + t) *
+        (dims[1]**2 + t) *
+        (dims[2]**2 + t) *
+        delta_t
+    )**(-1)
+    return tmp

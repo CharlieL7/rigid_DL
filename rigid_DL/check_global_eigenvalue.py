@@ -1,7 +1,8 @@
 """
 Creates the stiffness matrix and then finds the eigenvalue of the system
-corresponding to an eigenfunction
-Used to get a measure of the global error in a discretization
+corresponding to an eigenfunction by minimizing the L2 error.
+Used to get a measure of the global error in a discretization.
+Currently doesn't work well...
 """
 import sys
 import numpy as np

@@ -144,7 +144,7 @@ def eigval_err(mesh, pot_type, mesh_type, C, eigval, E_d, E_c):
     """
     Linear eigenvalue/eigenvector error function
     """
-    tol = 1e-15 #lower bound for norm about equal to zero
+    tol = 1e-6 #lower bound for norm about equal to zero
     v_fun_map = {
         (Pot_Type.CONSTANT, Mesh_Type.LINEAR): efun.make_cp_le_lin_vels,
         (Pot_Type.LINEAR, Mesh_Type.LINEAR): efun.make_lp_le_lin_vels,

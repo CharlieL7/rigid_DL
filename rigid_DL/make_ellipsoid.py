@@ -21,15 +21,19 @@ def main():
     verts, faces = make_icosahedron()
     if args.geodesic:
         verts, faces = geodesic_div(verts, faces, num_subdiv)
-        #proj_usphere(verts)
     else:
         i = 0
         while i < num_subdiv:
             verts, faces = subdiv_mesh(verts, faces)
             i += 1
-    verts = scale_mesh(dims, verts)
+
     if args.is_quad:
         verts, faces = conv_to_quad(verts, faces)
+
+    proj_usphere(verts)
+    verts = scale_mesh(dims, verts)
+
+    if args.is_quad:
         cells = [("triangle6", faces)]
         mesh = meshio.Mesh(np.array(verts), cells)
     else:
@@ -108,7 +112,7 @@ def geodesic_div(verts, faces, n):
         faces: triangular faces
         n: number segments to split each edge into
     """
-    assert n > 1
+    assert n >= 1
     # track edges divided: "edge as tuple of indicies": indicies of edge nodes incl. original
     # not the same as in subdiv_mesh
     edge_cache = dict()

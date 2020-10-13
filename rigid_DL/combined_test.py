@@ -172,7 +172,7 @@ def main():
     elif pot_type == Pot_Type.LINEAR and mesh_type == Mesh_Type.QUADRATIC:
         mesh_io = meshio.Mesh(
             mesh.lin_verts,
-            cells = [("triangle", mesh.lin_faces)],
+            cells=[("triangle", mesh.lin_faces)],
             point_data={
                 "abs_err_12": abs_err_12,
                 "v_in_12": v_in_12,
@@ -239,9 +239,11 @@ def lin_eigval_err(mesh, pot_type, mesh_type, C, eigval, E_d, E_c):
     g = np.dot((lambda_mat - C), v_in.flatten("C"))
     g = g.reshape(v_in.shape, order="C")
     err_arr = np.linalg.norm(g, axis=1)
+    base = eigval * v_in
+    base = np.linalg.norm(base, axis=1)
     v_in_norms = np.linalg.norm(v_in, axis=1)
-    # only divides when v_in_norm is > than tol, otherwise sets to zero
-    per_err_arr = np.divide(err_arr, v_in_norms, out=np.zeros_like(err_arr), where=v_in_norms>tol)
+    # only divides when base is > than tol, otherwise sets to zero
+    per_err_arr = np.divide(err_arr, base, out=np.zeros_like(err_arr), where=base>tol)
     return (err_arr, v_in, per_err_arr)
 
 
@@ -256,7 +258,7 @@ def quad_eigval_err(mesh, dims, pot_type, mesh_type, C, kappa_vec):
         mesh_type: geometric parameterization
         C: discrete DL operator for mesh
         kappa_vec: the three kappa values for the 3x3 system associated with
-        the eigenfunctions 
+        the eigenfunctions
     """
     tol = 1e-6 #lower bound for norm about equal to zero
     eigval_3x3 = -(1 + kappa_vec) / (kappa_vec -1)
@@ -277,13 +279,14 @@ def quad_eigval_err(mesh, dims, pot_type, mesh_type, C, kappa_vec):
         tmp_err = np.dot((lambda_mat - C), v_in.flatten("C"))
         tmp_err = tmp_err.reshape(v_in.shape, order="C")
         tmp_err = np.linalg.norm(tmp_err, axis=1)
-        # only divides when v_in_norm is > than tol, otherwise sets to zero
-        tmp_per_err = np.divide(tmp_err, tmp_v_in_norm, out=np.zeros_like(tmp_err), where=tmp_v_in_norm>tol)
+        base = eigval_3x3[i] * v_in
+        base = np.linalg.norm(base, axis=1)
+        tmp_per_err = np.divide(tmp_err, base, out=np.zeros_like(tmp_err), where=base>tol)
         v_in_norm_3x3.append(tmp_v_in_norm)
         err_3x3.append(tmp_err)
         per_err_3x3.append(tmp_per_err)
     return (err_3x3, v_in_norm_3x3, per_err_3x3)
-    
+
 
 def calc_avg_v_in_norm(mesh, mesh_type, E_d, E_c):
     """

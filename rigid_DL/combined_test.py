@@ -131,10 +131,48 @@ def main():
                 "normalized_err_332": [percent_err_3x3[2]],
             }
         )
-    elif pot_type == Pot_Type.LINEAR:
+    elif pot_type == Pot_Type.LINEAR and mesh_type != Mesh_Type.QUADRATIC:
         mesh_io = meshio.Mesh(
             mesh.vertices,
             cells,
+            point_data={
+                "abs_err_12": abs_err_12,
+                "v_in_12": v_in_12,
+                "normalized_err_12": percent_err_12,
+
+                "abs_err_23": abs_err_23,
+                "v_in_23":v_in_23,
+                "normalized_err_23": percent_err_23,
+
+                "abs_err_31": abs_err_31,
+                "v_in_31": v_in_31,
+                "normalized_err_31": percent_err_31,
+
+                "abs_err_p": abs_err_p,
+                "v_in_p": v_in_p,
+                "normalized_err_p": percent_err_p,
+
+                "abs_err_m": abs_err_m,
+                "v_in_m": v_in_m,
+                "normalized_err_m": percent_err_m,
+
+                "abs_err_330": abs_err_3x3[0],
+                "v_in_330": v_in_3x3[0],
+                "normalized_err_330": percent_err_3x3[0],
+
+                "abs_err_331": abs_err_3x3[1],
+                "v_in_331": v_in_3x3[1],
+                "normalized_err_331": percent_err_3x3[1],
+
+                "abs_err_332": abs_err_3x3[2],
+                "v_in_332":v_in_3x3[2],
+                "normalized_err_332": percent_err_3x3[2],
+            }
+        )
+    elif pot_type == Pot_Type.LINEAR and mesh_type == Mesh_Type.QUADRATIC:
+        mesh_io = meshio.Mesh(
+            mesh.lin_verts,
+            cells = [("triangle", mesh.lin_faces)],
             point_data={
                 "abs_err_12": abs_err_12,
                 "v_in_12": v_in_12,
@@ -204,18 +242,6 @@ def lin_eigval_err(mesh, pot_type, mesh_type, C, eigval, E_d, E_c):
     v_in_norms = np.linalg.norm(v_in, axis=1)
     # only divides when v_in_norm is > than tol, otherwise sets to zero
     per_err_arr = np.divide(err_arr, v_in_norms, out=np.zeros_like(err_arr), where=v_in_norms>tol)
-    if (pot_type == Pot_Type.LINEAR and mesh_type == Mesh_Type.QUADRATIC):
-        # fill unused verticies with lp_qe parameterization with zeros
-        num_quad_verts = mesh.vertices.shape[0]
-        quad_err_arr = np.zeros(num_quad_verts)
-        quad_v_in_arr = np.zeros((num_quad_verts, 3))
-        quad_per_err_arr = np.zeros(num_quad_verts)
-        for i, err in enumerate(err_arr):
-            quad_ind = mesh.lin_to_quad_map[i]
-            quad_err_arr[quad_ind] = err
-            quad_v_in_arr[quad_ind] = v_in[i]
-            quad_per_err_arr[quad_ind] = per_err_arr[i]
-        return(quad_err_arr, quad_v_in_arr, quad_per_err_arr)
     return (err_arr, v_in, per_err_arr)
 
 

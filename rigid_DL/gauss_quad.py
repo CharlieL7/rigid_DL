@@ -89,8 +89,9 @@ def int_over_tri_quad_n(func, nodes, n):
 
 def quad_n(nodes, xc, tri_c):
     """
-    Calculate the normal vector values over a curved triangle for severn point Gaussian quadrature.
+    Calculate the normal vector values over a curved triangle for six point Gaussian quadrature.
     This function is use to reduce the number of times these values are recalculated.
+    Reorients the normal if needed.
 
     Parameters:
         nodes: 3x6 ndarray with nodes as column vectors

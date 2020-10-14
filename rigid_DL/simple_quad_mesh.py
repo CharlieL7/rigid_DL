@@ -72,7 +72,7 @@ class simple_quad_mesh:
 
     def calc_all_quad_n(self):
         """
-        Calculates all of the normal vector values that will be used for seven point
+        Calculates all of the normal vector values that will be used for six point
         Gaussian quadrature
         """
         Nf = self.faces.shape[0]
@@ -86,7 +86,7 @@ class simple_quad_mesh:
 
     def calc_all_quad_hs(self):
         """
-        Calculates all of the hs values that will be used for seven point
+        Calculates all of the hs values that will be used for six point
         Gaussian quadrature
         """
         assert self.quad_n.any()

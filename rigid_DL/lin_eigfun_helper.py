@@ -10,8 +10,8 @@ def make_cp_le_lin_vels(E_d, E_c, mesh):
     Makes the velocitiy field from the rate of strain field
     constant potential, linear elements
 Parameters:
-        E_d : the rate of strain field dotted with position
-        E_c : the rate of strain field crossed with position
+        E_d : the rate of strain field, dotted with position
+        E_c : the rate of strain field, crossed with position
         mesh : simple linear mesh input
     Returns:
         v_list : velocities at each element or node
@@ -22,7 +22,7 @@ Parameters:
         face = mesh.faces[m]
         nodes = mesh.get_nodes(face)
         center = mesh.calc_tri_center(nodes)
-        v_list[m] = np.dot(E_d, center) - np.cross(E_c, center)
+        v_list[m] = E_d @ center - np.cross(E_c, center)
     return v_list
 
 
@@ -31,8 +31,8 @@ def make_lp_le_lin_vels(E_d, E_c, mesh):
     Makes the velocitiy field from the rate of strain field
     linear potential, linear elements
 Parameters:
-        E_d : the rate of strain field dotted with position
-        E_c : the rate of strain field crossed with position
+        E_d : the rate of strain field, dotted with position
+        E_c : the rate of strain field, crossed with position
         mesh : simple linear mesh input
     Returns:
         v_list : velocities at each element or node
@@ -41,7 +41,7 @@ Parameters:
     v_list = np.zeros((num_vert, 3))
     for m in range(num_vert):
         vert = mesh.vertices[m]
-        v_list[m] = np.dot(E_d, vert) - np.cross(E_c, vert)
+        v_list[m] = E_d @ vert - np.cross(E_c, vert)
     return v_list
 
 
@@ -50,8 +50,8 @@ def make_cp_qe_lin_vels(E_d, E_c, mesh):
     Make the velocity field from the rate of strain field
     constant potential, quadratic elements
 Parameters:
-        E_d : the rate of strain field dotted with position
-        E_c : the rate of strain field crossed with position
+        E_d : the rate of strain field, dotted with position
+        E_c : the rate of strain field, crossed with position
         mesh : simple quadratic mesh input
     Returns:
         v_list : velocities at each element or node
@@ -71,8 +71,8 @@ def make_lp_qe_lin_vels(E_d, E_c, mesh):
     Make the velocity field from the rate of strain field
     linear potential, quadratic elements
 Parameters:
-        E_d : the rate of strain field dotted with position
-        E_c : the rate of strain field crossed with position
+        E_d : the rate of strain field, dotted with position
+        E_c : the rate of strain field, crossed with position
         mesh : simple quadratic mesh input
     Returns:
         v_list : velocities at each element or node

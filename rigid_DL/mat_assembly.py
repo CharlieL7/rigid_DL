@@ -5,27 +5,29 @@ import numpy as np
 import rigid_DL.gauss_quad as gq
 import rigid_DL.geometric as geo
 
-def make_mat_cp_le(lin_mesh):
+def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     """
     Makes the stiffness matrix using closed surface singularity subtraction.
     For constant potentials over a linear elements.
     Faces loop over source points loop.
 
     Parameters:
-        lin_mesh : simple linear mesh input
+        cons_pot_mesh: constant potential mesh
+        lin_geo_mesh : linear geometric mesh
     Returns:
         the stresslet matrix
     """
-    num_faces = lin_mesh.faces.shape[0]
+    pot_faces = cons_pot_mesh.get_faces()
+    num_faces = pot_faces.shape[0] # should be same for either pot or geo
     c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces):
-        face_nodes = lin_mesh.get_nodes(lin_mesh.faces[face_num])
-        face_n = lin_mesh.normals[face_num]
-        face_hs = lin_mesh.hs[face_num]
+        face_nodes = lin_geo_mesh.get_nodes(face_num)
+        face_n = lin_geo_mesh.get_normal(face_num)
+        face_hs = lin_geo_mesh.get_hs(face_num)
         face_unit_n = face_n / face_hs
         for src_num in range(num_faces):
-            src_center = lin_mesh.calc_tri_center(lin_mesh.get_nodes(lin_mesh.faces[src_num]))
+            src_center = cons_pot_mesh.get_node(src_num)
             if face_num != src_num:
                 sub_mat = gq.int_over_tri_lin(
                     make_cp_le_quad_func(face_unit_n, src_center),
@@ -44,33 +46,35 @@ def make_mat_cp_le(lin_mesh):
     return C
 
 
-def make_mat_lp_le(lin_mesh):
+def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
     """
     Makes the stiffness matrix using closed surface singularity subtraction.
     For linear potentials over a linear elements.
 
     Parameters:
-        lin_mesh : simple linear mesh input
+        lin_mesh : linear mesh input
     Returns:
         the stresslet matrix
     """
-    num_faces = lin_mesh.faces.shape[0]
-    num_verts = lin_mesh.vertices.shape[0]
+    geo_faces = lin_mesh.get_faces()
+    pot_faces = geo_faces
+    num_faces = geo_faces.shape[0]
+    num_verts = vertices.shape[0]
     c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_verts, 3 * num_verts))
 
     for face_num in range(num_faces): # integrate over faces
-        face_nodes = lin_mesh.get_nodes(lin_mesh.faces[face_num])
-        face_n = lin_mesh.normals[face_num]
-        face_hs = lin_mesh.hs[face_num]
+        face_nodes = lin_mesh.get_nodes(face_num)
+        face_n = lin_mesh.get_normal(face_num)
+        face_hs = lin_mesh.get_hs(face_num)
         face_unit_n = face_n / face_hs
         for src_num in range(num_verts): # source points
-            src_pt = lin_mesh.vertices[src_num]
+            src_pt = vertices[src_num]
             is_singular, local_singular_ind = lin_mesh.check_in_face(src_num, face_num)
 
             if is_singular: # singular triangle
                 for node_num in range(3):
-                    node_global_num = lin_mesh.faces[face_num, node_num] # global index for vert
+                    node_global_num = faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_lin(
                         make_sing_lp_le_quad_func(
                             face_unit_n, src_pt, node_num, local_singular_ind
@@ -83,7 +87,7 @@ def make_mat_lp_le(lin_mesh):
 
             else: # regular triangle
                 for node_num in range(3):
-                    node_global_num = lin_mesh.faces[face_num, node_num] # global index for vert
+                    node_global_num = faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_lin(
                         make_reg_lp_le_quad_func(
                             face_unit_n, src_pt, node_num
@@ -111,7 +115,7 @@ def make_mat_lp_le(lin_mesh):
     return C
 
 
-def make_mat_cp_qe(quad_mesh):
+def make_mat_cp_qe(cons_pot_mesh, quad_geo_mesh):
     """
     Makes the stiffness matrix using closed surface singularity subtraction.
     For constant potentials over quadratic elements.
@@ -121,14 +125,15 @@ def make_mat_cp_qe(quad_mesh):
     Returns:
         the stresslet matrix
     """
-    num_faces = quad_mesh.faces.shape[0]
+    geo_faces = quad_mesh.get_faces()
+    num_faces = geo_faces.shape[0]
     c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces): # field points
-        face_nodes = quad_mesh.get_nodes(quad_mesh.faces[face_num])
-        face_n = quad_mesh.quad_n[face_num]
+        face_nodes = quad_mesh.get_nodes(face_num)
+        face_n = quad_mesh.get_quad_n(face_num)
         for src_num in range(num_faces): # source points
-            src_center = quad_mesh.calc_tri_center(quad_mesh.get_nodes(quad_mesh.faces[src_num]))
+            src_center = quad_mesh.get_tri_center(src_num)
             if face_num != src_num:
                 sub_mat = gq.int_over_tri_quad_n(
                     make_cp_qe_quad_func(src_center),
@@ -148,7 +153,7 @@ def make_mat_cp_qe(quad_mesh):
     return C
 
 
-def make_mat_lp_qe(quad_mesh):
+def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
     """
     Makes the stiffness matrix using closed surface singularity subtraction.
     For linear potentials over quadratic elements.
@@ -158,6 +163,8 @@ def make_mat_lp_qe(quad_mesh):
     Returns:
         the stresslet matrix
     """
+    geo_faces = quad_mesh.get_faces()
+    geo_verts = quad_mesh.get_verticies()
     num_faces = quad_mesh.lin_faces.shape[0]
     num_verts = quad_mesh.lin_verts.shape[0]
     c_0 = 1. / (4. * np.pi)

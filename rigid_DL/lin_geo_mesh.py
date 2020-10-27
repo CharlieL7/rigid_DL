@@ -15,12 +15,12 @@ class Lin_Geo_Mesh(Geo_Mesh):
         Constructor for the simple_mesh object.
 
         Parameters:
-            x : vertices in list-like object (Nv, 3)
-            f : list-like with indices to vertices of a triangle
+            x : verts in list-like object (Nv, 3)
+            f : list-like with indices to verts of a triangle
                 expecting 3 node triangles (Nf, 3)
         """
         # (Nv, 3) ndarray
-        self.vertices = np.array(x)
+        self.verts = np.array(x)
         # (Nf, 3) ndarray
         self.faces = np.array(f)
         self.normals = self.calc_all_n()
@@ -29,11 +29,11 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.centroid = self.calc_mesh_centroid()
         self.reori_n()
         self.mom_inertia = self.calc_moment_inertia_tensor()
-        self.dims = self.calc_ellip_dims()
+        #self.dims = self.calc_ellip_dims()
 
 
-    def get_verticies(self):
-        return self.vertices
+    def get_verts(self):
+        return self.verts
 
 
     def get_faces(self):
@@ -54,9 +54,9 @@ class Lin_Geo_Mesh(Geo_Mesh):
             nodes : (3, 3) ndarray of nodes as columns
         """
         face = self.faces[face_num]
-        x_0 = self.vertices[face[0]]
-        x_1 = self.vertices[face[1]]
-        x_2 = self.vertices[face[2]]
+        x_0 = self.verts[face[0]]
+        x_1 = self.verts[face[1]]
+        x_2 = self.verts[face[2]]
         nodes = np.stack((x_0, x_1, x_2), axis=1)
         return nodes
 
@@ -70,7 +70,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         Returns:
             tri_c : (3, ) ndarray for triangle center
         """
-        nodes = self.get_nodes(self.faces[face_num])
+        nodes = self.get_tri_nodes(face_num)
         pt = geo.pos_linear(1/3., 1/3., nodes)
         return pt
 
@@ -98,7 +98,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         """
         return self.hs[face_num]
 
-    
+
     def calc_all_n(self):
         """
         Calculates all of the mesh normals, (Nf, 3) ndarray.
@@ -107,7 +107,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         Nf = self.faces.shape[0]
         normals = np.empty([Nf, 3])
         for i, face in enumerate(self.faces):
-            nodes = self.get_nodes(face)
+            nodes = self.get_tri_nodes(i)
             normals[i] = np.cross(nodes[:, 1] - nodes[:, 0], nodes[:, 2] - nodes[:, 0])
         return normals
 
@@ -125,8 +125,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         outwards from the mesh if required
         """
         for i, face in enumerate(self.faces):
-            nodes = self.get_nodes(face)
-            x_c2tri = self.calc_tri_center(nodes) - self.centroid
+            x_c2tri = self.get_tri_center(i) - self.centroid
             if np.dot(self.normals[i], x_c2tri) < 0.:
                 self.normals[i] = -self.normals[i]
 
@@ -137,7 +136,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         """
         s_a = 0.0
         for i, face in enumerate(self.faces): # get rows
-            nodes = self.get_nodes(face)
+            nodes = self.get_tri_nodes(i)
             s_a += gq.int_over_tri_lin(geo.const_func, nodes, self.hs[i])
         return s_a
 
@@ -148,7 +147,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         """
         x_c = np.zeros(3)
         for i, face in enumerate(self.faces):
-            nodes = self.get_nodes(face)
+            nodes = self.get_tri_nodes(i)
             x_c += gq.int_over_tri_lin(geo.pos_linear, nodes, self.hs[i])
         x_c /= self.surf_area
         return x_c
@@ -161,7 +160,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         """
         inertia_tensor = np.zeros((3, 3))
         for i, face in enumerate(self.faces):
-            nodes = self.get_nodes(face)
+            nodes = self.get_tri_nodes(i)
             inertia_tensor += gq.int_over_tri_lin(geo.inertia_func_linear, nodes, self.hs[i])
         inertia_tensor /= self.surf_area
         return inertia_tensor
@@ -198,29 +197,8 @@ class Lin_Geo_Mesh(Geo_Mesh):
         if np.dot(temp.T, eigvecs[:, 2]) < 0:
             eigvecs[:, 2] = -eigvecs[:, 2]
 
-        x_rot = np.matmul(self.vertices, eigvecs)
+        x_rot = np.matmul(self.verts, eigvecs)
         a = np.amax(x_rot[:, 0]) - np.amin(x_rot[:, 0])
         b = np.amax(x_rot[:, 1]) - np.amin(x_rot[:, 1])
         c = np.amax(x_rot[:, 2]) - np.amin(x_rot[:, 2])
         return (a, b, c)
-
-
-
-    def check_in_face(self, vert_num, face_num):
-        """
-        Checks if a vertex is contained in a face
-        Return the local node index if found in the face
-        Gives the first index if multiple (there should not be multiple for a valid mesh)
-
-        Parameters:
-            vert_num : global index for vertex
-            face_num : index for face
-        Returns:
-            (is_singular, local_singular_index)
-            is_sinuglar : if integral is singular
-            local_singular_index : local index [0:N) of singular node
-        """
-        for i, node_global_ind in enumerate(self.faces[face_num]):
-            if node_global_ind == vert_num:
-                return (True, i)
-        return (False, None)

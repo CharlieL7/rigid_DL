@@ -8,7 +8,7 @@ from rigid_DL.pot_mesh import Pot_Mesh
 class Cons_Pot_Mesh(Pot_Mesh):
 
     def get_node(self, face_num):
-        return self.node[face_num]
+        return self.nodes[face_num]
 
 
     def get_nodes(self):

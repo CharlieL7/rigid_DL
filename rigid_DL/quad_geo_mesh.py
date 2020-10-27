@@ -17,12 +17,12 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Face numbers must be equivalent to potential mesh's.
 
         Parameters:
-            x : vertices in list-like object (Nv, 3)
-            f : list-like with indices to vertices of a triangle
+            x : verts in list-like object (Nv, 3)
+            f : list-like with indices to verts of a triangle
                 expecting 6 node curved triangles (Nf, 6)
-                Indicies 0, 1, 2 should be the triangle vertices
+                Indicies 0, 1, 2 should be the triangle verts
         """
-        self.vertices = np.array(x) # (Nv, 3) ndarray
+        self.verts = np.array(x) # (Nv, 3) ndarray
         self.faces = np.array(f) # (Nf, 6) ndarray
         self.centroid = self.calc_mesh_centroid_pc()
         self.quad_n = self.calc_all_quad_n()
@@ -30,8 +30,8 @@ class Quad_Geo_Mesh(Geo_Mesh):
         self.surf_area = self.calc_surf_area()
 
 
-    def get_verticies(self):
-        return self.verticies
+    def get_verts(self):
+        return self.verts
 
 
     def get_faces(self):
@@ -52,12 +52,12 @@ class Quad_Geo_Mesh(Geo_Mesh):
             nodes : (6, 3) ndarray of nodes as columns
         """
         face = self.faces[face_num]
-        x_0 = self.vertices[face[0]]
-        x_1 = self.vertices[face[1]]
-        x_2 = self.vertices[face[2]]
-        x_3 = self.vertices[face[3]]
-        x_4 = self.vertices[face[4]]
-        x_5 = self.vertices[face[5]]
+        x_0 = self.verts[face[0]]
+        x_1 = self.verts[face[1]]
+        x_2 = self.verts[face[2]]
+        x_3 = self.verts[face[3]]
+        x_4 = self.verts[face[4]]
+        x_5 = self.verts[face[5]]
         nodes = np.stack((x_0, x_1, x_2, x_3, x_4, x_5), axis=1)
         return nodes
 
@@ -71,7 +71,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Returns:
             tri_c : (3, ) ndarray for triangle center
         """
-        nodes = self.get_nodes(self.faces[face_num])
+        nodes = self.get_tri_nodes(face_num)
         pt = geo.pos_quadratic(1./3., 1./3., nodes)
         return pt
 
@@ -96,8 +96,8 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Nf = self.faces.shape[0]
         normals = np.empty([Nf, 3, 6])
         for i, face in enumerate(self.faces):
-            nodes = self.get_nodes(face)
-            tri_c = self.calc_tri_center(nodes)
+            nodes = self.get_tri_nodes(i)
+            tri_c = self.get_tri_center(i)
             normals[i] = gq.quad_n(nodes, self.centroid, tri_c)
         return normals
 
@@ -116,13 +116,13 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Calculates the surface area of the mesh
 
         Parameters:
-            requires vertices, faces to be set
+            requires verts, faces to be set
         Returns:
             total surface area of mesh
         """
         s_a = 0.0
         for i, face in enumerate(self.faces):
-            nodes = self.get_nodes(face)
+            nodes = self.get_tri_nodes(i)
             s_a += gq.int_over_tri_quad(geo.const_func, nodes, self.quad_hs[i])
         return s_a
 
@@ -132,13 +132,13 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Calculates the centroid of the mesh weighted by the element area
 
         Parameters:
-            requires verticies, faces, surf_area to be set
+            requires verts, faces, surf_area to be set
         Returns:
             centroid as ndarray of shape (3, )
         """
         x_c = np.zeros(3)
         for i, face in enumerate(self.faces):
-            nodes = self.get_nodes(face)
+            nodes = self.get_tri_nodes(i)
             x_c += gq.int_over_tri_quad(geo.pos_quadratic, nodes, self.quad_hs[i])
         x_c /= self.surf_area
         return x_c
@@ -148,7 +148,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         """
         Centroid of mesh assuming point cloud
         """
-        x_c = np.mean(self.vertices, axis=0)
+        x_c = np.mean(self.verts, axis=0)
         return x_c
 
 
@@ -168,7 +168,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         e_eta = np.matmul(nodes, geo.dphi_deta_quadratic(xi, eta, nodes))
         n = np.cross(e_xi, e_eta)
 
-        pt2tri = self.calc_tri_center(nodes) - self.centroid
+        pt2tri = self.get_tri_center(nodes) - self.centroid
         if np.dot(n, pt2tri) < 0.:
             n = -n
 
@@ -195,28 +195,8 @@ class Quad_Geo_Mesh(Geo_Mesh):
         if np.dot(temp.T, eigvecs[:, 2]) < 0:
             eigvecs[:, 2] = -eigvecs[:, 2]
 
-        x_rot = np.matmul(self.vertices, eigvecs)
+        x_rot = np.matmul(self.verts, eigvecs)
         a = np.amax(x_rot[:, 0]) - np.amin(x_rot[:, 0])
         b = np.amax(x_rot[:, 1]) - np.amin(x_rot[:, 1])
         c = np.amax(x_rot[:, 2]) - np.amin(x_rot[:, 2])
         return (a, b, c)
-
-
-    def check_in_face(self, vert_num, face_num):
-        """
-        Checks if a vertex is contained in a face
-        Return the local node index if found in the face
-        Gives the first index if multiple (there should not be multiple for a valid mesh)
-
-        Parameters:
-            vert_num : global index for vertex
-            face_num : index for face
-        Returns:
-            (is_singular, local_singular_index)
-            is_sinuglar : if integral is singular
-            local_singular_index : local index [0:N) of singular node
-        """
-        for i, node_global_ind in enumerate(self.faces[face_num]):
-            if node_global_ind == vert_num:
-                return (True, i)
-        return (False, None)

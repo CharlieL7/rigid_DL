@@ -8,7 +8,7 @@ import rigid_DL.eigenvalues as ev
 import rigid_DL.geometric as geo
 import rigid_DL.elliptic_integrals as e_int
 
-def E_12(geo_mesh):
+def E_12(geo_mesh, dims):
     """
     Off diagonal (12) rate of strain field eigenfunction
     Returns velocites at each vertex in cartesional coordinates
@@ -18,21 +18,21 @@ def E_12(geo_mesh):
     Returns;
     """
     E_d = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
-    a, b, _c = geo_mesh.dims
+    a, b, _c = dims
     E_c = (a**2 - b**2)/(a**2 + b**2) * E_d[0, 1] * np.array([0, 0, 1])
     return (E_d, E_c)
 
 
-def E_31(geo_mesh):
+def E_31(geo_mesh, dims):
     E_d = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
-    a, _b, c = geo_mesh.dims
+    a, _b, c = dims
     E_c = (c**2 - a**2)/(c**2 + a**2) * E_d[0, 2] * np.array([0, 1, 0])
     return (E_d, E_c)
 
 
-def E_23(geo_mesh):
+def E_23(geo_mesh, dims):
     E_d = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
-    _a, b, c = geo_mesh.dims
+    _a, b, c = dims
     E_c = (b**2 - c**2)/(b**2 + c**2) * E_d[1, 2] * np.array([1, 0, 0])
     return (E_d, E_c)
 
@@ -61,7 +61,7 @@ def hyper_xy():
     return (E_d, E_c)
 
 
-def diag_eigvec(pm, geo_mesh):
+def diag_eigvec(pm, geo_mesh, dims):
     """
     Calculates the eigenfunctions associated with the diagonal terms
     of the linear rate of strain field.
@@ -72,7 +72,11 @@ def diag_eigvec(pm, geo_mesh):
     Returns:
         E_d and E_c matricies for dotting with position
     """
-    dims = geo_mesh.dims
+    if np.allclose(dims, [1., 1., 1.,]):
+        print("Sphere detected, diagonal linear ROS field set to arbitrary flow")
+        if pm == "+":
+            return uni_x()
+        return uni_z()
     kapp = ev.kappa_pm(pm, dims)
     app_0, bpp_0, gpp_0 = ev.ellip_pp_cnst(dims)
     d = bpp_0 * gpp_0 + gpp_0 * app_0 + app_0 * bpp_0

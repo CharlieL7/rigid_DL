@@ -23,7 +23,7 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces):
-        face_nodes = lin_geo_mesh.get_nodes(face_num)
+        face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_n = lin_geo_mesh.get_normal(face_num)
         face_hs = lin_geo_mesh.get_hs(face_num)
         face_unit_n = face_n / face_hs
@@ -67,7 +67,7 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
     C = np.zeros((3 * num_nodes, 3 * num_nodes))
 
     for face_num in range(num_faces): # integrate over faces
-        face_nodes = lin_geo_mesh.get_nodes(face_num)
+        face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_n = lin_geo_mesh.get_normal(face_num)
         face_hs = lin_geo_mesh.get_hs(face_num)
         face_unit_n = face_n / face_hs
@@ -148,7 +148,7 @@ def make_mat_cp_qe(cons_pot_mesh, quad_geo_mesh):
                 C[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
                 C[(3 * src_num):(3 * src_num + 3),
-                 (3 * src_num):(3 * src_num + 3)] -= sub_mat
+                  (3 * src_num):(3 * src_num + 3)] -= sub_mat
             # do nothing face_num == src_num, how it works out for constant elements
 
     for src_num in range(num_faces):
@@ -171,13 +171,14 @@ def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
     geo_faces = quad_geo_mesh.get_faces()
     pot_faces = lin_pot_mesh.get_faces()
     assert geo_faces.shape[0] == pot_faces.shape[0]
-    num_faces = quad_geo_mesh.shape[0]
-    num_nodes = quad_geo_mesh.shape[0]
+    num_faces = geo_faces.shape[0]
+    pot_nodes = lin_pot_mesh.get_nodes()
+    num_nodes = pot_nodes.shape[0]
     c_0 = 1. / (4. * np.pi)
     C = np.zeros((3 * num_nodes, 3 * num_nodes))
 
     for face_num in range(num_faces): # integrate over faces
-        face_nodes = quad_geo_mesh.get_nodes(face_num)
+        face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
         face_n = quad_geo_mesh.quad_n[face_num]
         for src_num in range(num_nodes): # source points
             src_pt = lin_pot_mesh.get_node(src_num)

@@ -27,7 +27,7 @@ class Geo_Mesh(ABC):
 
 
     @abstractmethod
-    def get_nodes(self, face_num):
+    def get_tri_nodes(self, face_num):
         pass
 
 

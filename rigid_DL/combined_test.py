@@ -5,9 +5,7 @@ import argparse as argp
 from enum import Enum
 import numpy as np
 import meshio
-import rigid_DL.input_output as io
-import rigid_DL.simple_linear_mesh as SLM
-import rigid_DL.simple_quad_mesh as SQM
+from rigid_Dl import lin_geo_mesh, quad_geo_mesh, cons_pot_mesh, lin_pot_mesh
 import rigid_DL.mat_assembly as mata
 import rigid_DL.eigenfunctions as eigfuns
 import rigid_DL.eigenvalues as eigvals
@@ -51,9 +49,17 @@ def main():
             break
 
     if mesh_type == Mesh_Type.LINEAR:
-        mesh = SLM.simple_linear_mesh(verts, faces)
+        geo_mesh = lin_geo_mesh.Lin_Geo_Mesh(verts, faces)
     elif mesh_type == Mesh_Type.QUADRATIC:
-        mesh = SQM.simple_quad_mesh(verts, faces)
+        geo_mesh = quad_geo_mesh.Quad_Geo_Mesh(verts, faces)
+
+    pot_mesh_map = {
+        (Pot_Type.CONSTANT, Mesh_Type.LINEAR): cons_pot_mesh.Cons_Pot_Mesh.make_from_geo_mesh(geo_mesh),
+        (Pot_Type.CONSTANT, Mesh_Type.QUADRATIC): cons_pot_mesh.Cons_Pot_Mesh.make_from_geo_mesh(geo_mesh),
+        (Pot_Type.LINEAR, Mesh_Type.LINEAR): lin_pot_mesh.Lin_Pot_Mesh.make_from_lin_geo_mesh(geo_mesh),
+        (Pot_Type.LINEAR, Mesh_Type.QUADRATIC): lin_pot_mesh.Cons_Pot_Mesh.make_from_quad_geo_mesh(geo_mesh),
+    }
+    pot_mesh = pot_mesh_map[(pot_type, mesh_type)]
 
     stiff_map = {
         (Pot_Type.CONSTANT, Mesh_Type.LINEAR): mata.make_mat_cp_le,
@@ -61,41 +67,57 @@ def main():
         (Pot_Type.CONSTANT, Mesh_Type.QUADRATIC): mata.make_mat_cp_qe,
         (Pot_Type.LINEAR, Mesh_Type.QUADRATIC): mata.make_mat_lp_qe,
     }
-    C =stiff_map[(pot_type, mesh_type)](mesh) # stiffness matrix
+    C = stiff_map[(pot_type, mesh_type)](pot_mesh, geo_mesh) # stiffness matrix
 
     # Linear eigenfunctions
-    E_d, E_c = eigfuns.E_12(mesh)
+    E_d, E_c = eigfuns.E_12(geo_mesh)
     eigval_12 = eigvals.lambda_12(expected_dims)
-    abs_err_12, v_in_12, percent_err_12 = lin_eigval_err(mesh, pot_type, mesh_type, C, eigval_12, E_d, E_c)
+    abs_err_12, v_in_12, percent_err_12 = lin_eigval_err(
+        pot_mesh,
+        {"C": C, "eigval": eigval_12, "E_d": E_d, "E_c": E_c},
+    )
 
-    E_d, E_c = eigfuns.E_23(mesh)
+    E_d, E_c = eigfuns.E_23(geo_mesh)
     eigval_23 = eigvals.lambda_23(expected_dims)
-    abs_err_23, v_in_23, percent_err_23 = lin_eigval_err(mesh, pot_type, mesh_type, C, eigval_23, E_d, E_c)
+    abs_err_23, v_in_23, percent_err_23 = lin_eigval_err(
+        pot_mesh,
+        {"C": C, "eigval": eigval_23, "E_d": E_d, "E_c": E_c},
+    )
 
-    E_d, E_c = eigfuns.E_31(mesh)
+    E_d, E_c = eigfuns.E_31(geo_mesh)
     eigval_31 = eigvals.lambda_31(expected_dims)
-    abs_err_31, v_in_31, percent_err_31 = lin_eigval_err(mesh, pot_type, mesh_type, C, eigval_31, E_d, E_c)
+    abs_err_31, v_in_31, percent_err_31 = lin_eigval_err(
+        pot_mesh,
+        {"C": C, "eigval": eigval_31, "E_d": E_d, "E_c": E_c},
+    )
 
-    E_d, E_c = eigfuns.diag_eigvec("+", mesh)
+    E_d, E_c = eigfuns.diag_eigvec("+", geo_mesh)
     eigval_p = eigvals.lambda_pm("+", expected_dims)
-    abs_err_p, v_in_p, percent_err_p = lin_eigval_err(mesh, pot_type, mesh_type, C, eigval_p, E_d, E_c)
+    abs_err_p, v_in_p, percent_err_p = lin_eigval_err(
+        pot_mesh,
+        {"C": C, "eigval": eigval_p, "E_d": E_d, "E_c": E_c},
+    )
 
-    E_d, E_c = eigfuns.diag_eigvec("-", mesh)
+    E_d, E_c = eigfuns.diag_eigvec("-", geo_mesh)
     eigval_m = eigvals.lambda_pm("-", expected_dims)
-    abs_err_m, v_in_m, percent_err_m = lin_eigval_err(mesh, pot_type, mesh_type, C, eigval_m, E_d, E_c)
+    abs_err_m, v_in_m, percent_err_m = lin_eigval_err(
+        pot_mesh,
+        {"C": C, "eigval": eigval_m, "E_d": E_d, "E_c": E_c},
+    )
+
 
     # 3x3 system quadratic eigenfunctions
     kappa_vec = eigvals.calc_3x3_eval(expected_dims)
-    abs_err_3x3, v_in_3x3, percent_err_3x3 = quad_eigval_err(mesh, expected_dims, pot_type, mesh_type, C, kappa_vec)
+    abs_err_3x3, v_in_3x3, percent_err_3x3 = quad_eigval_err(geo_mesh, expected_dims, pot_type, mesh_type, C, kappa_vec)
 
     if mesh_type == Mesh_Type.LINEAR:
-        cells = [("triangle", mesh.faces)]
+        cells = [("triangle", geo_mesh.faces)]
     elif mesh_type == Mesh_Type.QUADRATIC:
-        cells = [("triangle6", mesh.faces)]
+        cells = [("triangle6", geo_mesh.faces)]
 
     if pot_type == Pot_Type.CONSTANT:
         mesh_io = meshio.Mesh(
-            mesh.vertices,
+            geo_mesh.vertices,
             cells,
             cell_data={
                 "abs_err_12": [abs_err_12],
@@ -131,48 +153,10 @@ def main():
                 "normalized_err_332": [percent_err_3x3[2]],
             }
         )
-    elif pot_type == Pot_Type.LINEAR and mesh_type != Mesh_Type.QUADRATIC:
+    elif pot_type == Pot_Type.LINEAR:
         mesh_io = meshio.Mesh(
-            mesh.vertices,
+            pot_mesh.get_nodes(),
             cells,
-            point_data={
-                "abs_err_12": abs_err_12,
-                "v_in_12": v_in_12,
-                "normalized_err_12": percent_err_12,
-
-                "abs_err_23": abs_err_23,
-                "v_in_23":v_in_23,
-                "normalized_err_23": percent_err_23,
-
-                "abs_err_31": abs_err_31,
-                "v_in_31": v_in_31,
-                "normalized_err_31": percent_err_31,
-
-                "abs_err_p": abs_err_p,
-                "v_in_p": v_in_p,
-                "normalized_err_p": percent_err_p,
-
-                "abs_err_m": abs_err_m,
-                "v_in_m": v_in_m,
-                "normalized_err_m": percent_err_m,
-
-                "abs_err_330": abs_err_3x3[0],
-                "v_in_330": v_in_3x3[0],
-                "normalized_err_330": percent_err_3x3[0],
-
-                "abs_err_331": abs_err_3x3[1],
-                "v_in_331": v_in_3x3[1],
-                "normalized_err_331": percent_err_3x3[1],
-
-                "abs_err_332": abs_err_3x3[2],
-                "v_in_332":v_in_3x3[2],
-                "normalized_err_332": percent_err_3x3[2],
-            }
-        )
-    elif pot_type == Pot_Type.LINEAR and mesh_type == Mesh_Type.QUADRATIC:
-        mesh_io = meshio.Mesh(
-            mesh.lin_verts,
-            cells=[("triangle", mesh.lin_faces)],
             point_data={
                 "abs_err_12": abs_err_12,
                 "v_in_12": v_in_12,
@@ -210,31 +194,24 @@ def main():
     meshio.write("{}_out.vtk".format(out_name), mesh_io, file_format="vtk")
 
 
-def lin_eigval_err(mesh, pot_type, mesh_type, C, eigval, E_d, E_c):
+def lin_eigval_err(pot_mesh, C_ev):
     """
     Linear eigenvalue/eigenvector error function
 
     Parameters:
-        mesh: mesh to evaluate over
-        pot_type: potential parameterization
-        mesh_type: mesh parameterization
-        C: discrete DL operator for mesh
-        eigval: eigenvalue to test
-        E_d: dotted part of eigenfunction
-        E_c: crossed part of eigenfunction
+        pot_mesh: potential mesh
+        C_ev: dict of {K, eigval, E_d, E_v}
     Returns:
         err_arr: linear error at each node
         v_in: eigenfunction at each node
         per_err_arr: linear error normalized by L2 norm at node
     """
+    C = C_ev["C"]
+    eigval = C_ev["eigval"]
+    E_d = C_ev["E_d"]
+    E_c = C_ev["E_c"]
     tol = 1e-6 #lower bound for norm about equal to zero
-    v_fun_map = {
-        (Pot_Type.CONSTANT, Mesh_Type.LINEAR): lin_helper.make_cp_le_lin_vels,
-        (Pot_Type.LINEAR, Mesh_Type.LINEAR): lin_helper.make_lp_le_lin_vels,
-        (Pot_Type.CONSTANT, Mesh_Type.QUADRATIC): lin_helper.make_cp_qe_lin_vels,
-        (Pot_Type.LINEAR, Mesh_Type.QUADRATIC): lin_helper.make_lp_qe_lin_vels,
-    }
-    v_in = v_fun_map[(pot_type, mesh_type)](E_d, E_c, mesh)
+    v_in = rigid_DL.lin_eigfun_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
     lambda_mat = eigval * np.identity(C.shape[0])
     g = np.dot((lambda_mat - C), v_in.flatten("C"))
     g = g.reshape(v_in.shape, order="C")
@@ -247,7 +224,7 @@ def lin_eigval_err(mesh, pot_type, mesh_type, C, eigval, E_d, E_c):
     return (err_arr, v_in, per_err_arr)
 
 
-def quad_eigval_err(mesh, dims, pot_type, mesh_type, C, kappa_vec):
+def quad_eigval_err(pot_mesh, geo_mesh, dims, pot_type, mesh_type, C, kappa_vec):
     """
     Quadratic 3x3 system eigenfunction error function
 

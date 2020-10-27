@@ -85,6 +85,26 @@ Parameters:
     return v_list
 
 
+def make_lin_eig_vels(pot_mesh, E_d, E_c):
+    """
+    Make the eigenfunction velocity field from the rate of strain matrix
+    
+    Parameters:
+        pot_mesh: potential mesh
+        E_d: ROS field, dotted with position
+        E_c: ROS field, crossed with position
+    Returns:
+        v_list: velocities at each node
+    """
+    pot_nodes = pot_mesh.get_nodes()
+    num_nodes = pot_nodes.shape[0]
+    v_list = np.zeros((num_nodes, 3))
+    for m in range(num_nodes):
+        node = pot_nodes[m]
+        v_list[m] = E_d @ vert - np.cross(E_c, vert)
+    return v_list
+
+
 def make_lin_psi_func(E_d, E_c):
     """
     Makes the eigenvector function to integrate over the surface

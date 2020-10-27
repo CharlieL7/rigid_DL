@@ -42,7 +42,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         return self.centroid
 
 
-    def get_nodes(self, face_num):
+    def get_tri_nodes(self, face_num):
         """
         Gets the nodes of a face and puts nodes into a (6, 3) matrix
 

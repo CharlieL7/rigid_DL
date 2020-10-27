@@ -53,7 +53,8 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
     For linear potentials over a linear elements.
 
     Parameters:
-        lin_mesh : linear mesh input
+        lin_pot_mesh: linear potential mesh
+        lin_geo_mesh : linear geometric mesh
     Returns:
         the stresslet matrix
     """
@@ -124,7 +125,8 @@ def make_mat_cp_qe(cons_pot_mesh, quad_geo_mesh):
     For constant potentials over quadratic elements.
 
     Parameters:
-        quad_mesh : simple quadratic mesh input
+        cons_pot_mesh: constant potential mesh
+        quad_geo_mesh : quadratic geometric mesh
     Returns:
         the stresslet matrix
     """
@@ -164,7 +166,8 @@ def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
     For linear potentials over quadratic elements.
 
     Parameters:
-        quad_mesh : simple quadratic mesh input
+        lin_pot_mesh: linear potential mesh
+        quad_geo_mesh: quadratic geometric mesh
     Returns:
         the stresslet matrix
     """

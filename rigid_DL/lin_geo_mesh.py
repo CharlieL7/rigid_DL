@@ -139,11 +139,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         """
         Calculates the surface area of the mesh
         """
-        s_a = 0.0
-        for i, face in enumerate(self.faces): # get rows
-            nodes = self.get_tri_nodes(i)
-            s_a += gq.int_over_tri_lin(geo.const_func, nodes, self.hs[i])
-        return s_a
+        return 0.5 * np.sum(self.hs)
 
 
     def calc_mesh_centroid(self):
@@ -173,7 +169,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
 
     def calc_rotation_vectors(self):
         """
-        Calculates the rotation vectors (eigensolutions)
+        Calculates the rotation vectors (eigenvectors of moment of inertia)
         """
         eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
         w = np.zeros((3, 3))
@@ -184,8 +180,8 @@ class Lin_Geo_Mesh(Geo_Mesh):
 
     def calc_ellip_dims(self):
         """
-        Rotate the mesh by eigenvectors of the moment of inertia tensor and then get the lengths
-        along each axis
+        Rotate the mesh by eigenvectors of the moment of inertia tensor and then 
+        get the lengths along each axis
         """
 
         [eigvals, eigvecs] = np.linalg.eig(self.mom_inertia)

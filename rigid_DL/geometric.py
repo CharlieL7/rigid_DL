@@ -2,6 +2,12 @@ import sys
 import math
 import numpy as np
 
+
+LC_3 = np.zeros((3, 3, 3)) # 3D Levi_Civita Tensor
+LC_3[[0, 1, 2], [1, 2, 0], [2, 0, 1]] = 1.
+LC_3[[0, 2, 1], [1, 0, 2], [2, 1, 0]] = -1.
+
+
 def pos_linear(xi, eta, nodes):
     """
     position in a flat, 3 node triangle as a function of eta and xi
@@ -109,6 +115,37 @@ def calc_abg(nodes):
     gamma = 1. / (1. + np.linalg.norm(nodes[:, 4] - nodes[:, 1]) /
                   np.linalg.norm(nodes[:, 4] - nodes[:, 2]))
     return (alpha, beta, gamma)
+
+
+def stokeslet(x, x_0):
+    """
+    Green's function associated with point force solution.
+    G_ij
+    Parameters:
+        x: field point; (3,) ndarray
+        x_0: source point; (3,) ndaray
+    Returns:
+        G_il: (3,3,) ndarray
+    """
+    x_hat = x - x_0
+    r = np.linalg.norm(x_hat)
+    return np.identity(3) / r + np.einsum("i,j->ij", x_hat, x_hat) / r**3
+
+
+def rotlet(x, x_0):
+    """
+    Green's function associated with point torque solution.
+    G_C_ij
+    Parameters:
+        x: field point; (3,) ndarray
+        x_0: source point; (3,) ndarray
+    Returns:
+        G_C_ij: (3,3,) ndarray
+    """
+    x_hat = x - x_0
+    r = np.linalg.norm(x_hat)
+    tmp = np.einsum("iml,l->im", LC_3, x_hat)
+    return tmp / r**3
 
 
 def stresslet(x, x_0):

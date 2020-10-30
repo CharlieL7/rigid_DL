@@ -20,7 +20,7 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     pot_faces = cons_pot_mesh.get_faces()
     assert pot_faces.shape[0] == lin_geo_mesh.get_faces().shape[0]
     num_faces = pot_faces.shape[0]
-    c_0 = 1. / (4. * np.pi)
+    c_0 = -1. / (4. * np.pi)
     K = np.zeros((3 * num_faces, 3 * num_faces))
 
     # Make DL terms
@@ -60,7 +60,7 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
                 face_n * face_hs * 0.5
             )
             K[(3 * src_num):(3 * src_num + 3),
-              (3 * face_num):(3 * face_num + 3)] += (-1. / S_D) * sub_mat
+              (3 * face_num):(3 * face_num + 3)] += (1. / S_D) * sub_mat
 
     x_c = lin_geo_mesh.get_centroid()
     w = lin_geo_mesh.calc_rotation_vectors()
@@ -95,7 +95,7 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
         ) # added to the whole column
         for src_num in range(num_faces):
             K[(3 * src_num):(3 * src_num + 3),
-              (3 * face_num):(3 * face_num + 3)] += (1. / S_D) * v_sub_mat
+              (3 * face_num):(3 * face_num + 3)] += (-1. / S_D) * v_sub_mat
             src_center = cons_pot_mesh.get_node(src_num)
             def omega_quad(xi, eta, nodes):
                 pos = geo.pos_linear(xi, eta, nodes)
@@ -113,7 +113,7 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
             X_0 = src_center - x_c
             omega_mat = np.einsum("ijk,js,k->is", geo.LC_3, omega_mat, X_0)
             K[(3 * src_num):(3 * src_num + 3),
-              (3 * face_num):(3 * face_num + 3)] += omega_mat
+              (3 * face_num):(3 * face_num + 3)] += -1. * omega_mat
     return K
 
 
@@ -130,12 +130,13 @@ def make_cp_le_forcing_vec(cons_pot_mesh, lin_geo_mesh, u_d, f, l, mu):
         l: torque on particle; (3,) ndarray
         mu: fluid viscosity; scalar
     Returns:
-        f: forcing vector (3 * N,) ndarray
+        fv: forcing vector (3 * N,) ndarray
     """
     pot_faces = cons_pot_mesh.get_faces()
     assert pot_faces.shape[0] == lin_geo_mesh.get_faces().shape[0]
     num_faces = pot_faces.shape[0]
-    x_c = cons_pot_mesh.get_centroid()
+
+    x_c = lin_geo_mesh.get_centroid()
     c_0 = 1. / (4. * np.pi)
 
     # make Power and Miranda supplementary flow vector
@@ -144,10 +145,21 @@ def make_cp_le_forcing_vec(cons_pot_mesh, lin_geo_mesh, u_d, f, l, mu):
     v_s = np.empty(3 * num_faces)
     for src_num in range(num_faces):
         node = cons_pot_mesh.get_node(src_num)
-        v_s[(3 * src_num) : (3 * src_num + 3)] = f_s * geo.stokeslet(node, x_c) + l_s * geo.rotlet(node, x_c)
+        v_s[(3 * src_num) : (3 * src_num + 3)] = geo.stokeslet(node, x_c) @ f_s + geo.rotlet(node, x_c) @ l_s
     c_s = c_0 * (u_d - v_s) # script C term from Pozrikidis
-    
+    fv = np.copy(c_s) # must copy
+
     # make integral of c_s dotted with normal vector term
+    S_D = lin_geo_mesh.get_surface_area()
+    for face_num in range(num_faces):
+        face_n = lin_geo_mesh.get_normal(face_num)
+        face_hs = lin_geo_mesh.get_hs(face_num)
+        for src_num in range(num_faces):
+            src_n = lin_geo_mesh.get_normal(src_num)
+            # setting c_s as constant over element
+            sub_vec = src_n * np.dot(c_s[(3 * face_num) : (3 * face_num + 3)], face_n) * face_hs * 0.5
+            fv[(3 * src_num) : (3 * src_num + 3)] += (-1. / (2. * S_D)) * sub_vec
+    return fv
 
 
 def make_init_sol_vector(pot_mesh):
@@ -158,10 +170,10 @@ def make_init_sol_vector(pot_mesh):
     Parameters:
         pot_mesh: potential mesh
     Returns:
-        q : random initialized solution vector; (N, 3) ndarray
+        q : random initialized solution vector; (3 * N,) ndarray
     """
     num_nodes = pot_mesh.get_nodes().shape[0]
-    return np.random.rand(num_nodes, 3)
+    return np.random.rand(3 * num_nodes)
 
 
 def make_DL_cp_le_quad_func(n, x_0):

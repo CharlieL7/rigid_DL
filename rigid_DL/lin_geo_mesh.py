@@ -27,7 +27,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.hs = self.calc_all_hs()
         self.surf_area = self.calc_surf_area()
         self.centroid = self.calc_mesh_centroid()
-        self.reori_n()
+        self.normalize_n() # normal vectors normalized
         self.mom_inertia = self.calc_moment_inertia_tensor()
         #self.dims = self.calc_ellip_dims()
 
@@ -42,6 +42,10 @@ class Lin_Geo_Mesh(Geo_Mesh):
 
     def get_centroid(self):
         return self.centroid
+
+
+    def get_surface_area(self):
+        return self.surf_area
 
 
     def get_tri_nodes(self, face_num):
@@ -119,15 +123,16 @@ class Lin_Geo_Mesh(Geo_Mesh):
         return np.linalg.norm(self.normals, axis=1)
 
 
-    def reori_n(self):
+    def normalize_n(self):
         """
         Checks the orientation of the normals and reorients them to point
-        outwards from the mesh if required
+        outwards from the mesh if required. Then normalized the normal vectors
         """
         for i, face in enumerate(self.faces):
             x_c2tri = self.get_tri_center(i) - self.centroid
             if np.dot(self.normals[i], x_c2tri) < 0.:
                 self.normals[i] = -self.normals[i]
+            self.normals[i] = self.normals[i] / self.hs[i]
 
 
     def calc_surf_area(self):

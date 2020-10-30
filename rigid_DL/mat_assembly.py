@@ -26,12 +26,11 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_n = lin_geo_mesh.get_normal(face_num)
         face_hs = lin_geo_mesh.get_hs(face_num)
-        face_unit_n = face_n / face_hs
         for src_num in range(num_faces):
             src_center = cons_pot_mesh.get_node(src_num)
             if face_num != src_num:
                 sub_mat = gq.int_over_tri_lin(
-                    make_cp_le_quad_func(face_unit_n, src_center),
+                    make_cp_le_quad_func(face_n, src_center),
                     face_nodes,
                     face_hs
                 )
@@ -71,7 +70,6 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_n = lin_geo_mesh.get_normal(face_num)
         face_hs = lin_geo_mesh.get_hs(face_num)
-        face_unit_n = face_n / face_hs
         for src_num in range(num_nodes): # source points
             src_pt = pot_nodes[src_num]
             is_singular, local_singular_ind = lin_pot_mesh.check_in_face(src_num, face_num)
@@ -81,7 +79,7 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
                     node_global_num = pot_faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_lin(
                         make_sing_lp_le_quad_func(
-                            face_unit_n, src_pt, node_num, local_singular_ind
+                            face_n, src_pt, node_num, local_singular_ind
                             ),
                         face_nodes,
                         face_hs
@@ -94,7 +92,7 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
                     node_global_num = pot_faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_lin(
                         make_reg_lp_le_quad_func(
-                            face_unit_n, src_pt, node_num
+                            face_n, src_pt, node_num
                         ),
                         face_nodes,
                         face_hs
@@ -103,7 +101,7 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
                 # subtracting the q(x_0) term
                 sub_mat = gq.int_over_tri_lin(
-                    make_cp_le_quad_func(face_unit_n, src_pt),
+                    make_cp_le_quad_func(face_n, src_pt),
                     face_nodes,
                     face_hs
                 )

@@ -29,7 +29,8 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.centroid = self.calc_mesh_centroid()
         self.normalize_n() # normal vectors normalized
         self.mom_inertia = self.calc_moment_inertia_tensor()
-        #self.dims = self.calc_ellip_dims()
+        self.dims = self.calc_ellip_dims()
+        self.is_sphere = False
 
 
     def get_verts(self):
@@ -170,11 +171,13 @@ class Lin_Geo_Mesh(Geo_Mesh):
     def calc_rotation_vectors(self):
         """
         Calculates the rotation vectors (eigenvectors of moment of inertia)
+        Be careful of sphere case when this basis is no longer orthogonal.
+        Pretty sure can just use cartesional unit vectors for every case.
         """
+        if self.is_sphere:
+            return np.identity(3)
         eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
-        w = np.zeros((3, 3))
-        for i in range(3):
-            w[i] = eig_vecs[:, i] / (np.sqrt(eig_vals[i] * self.surf_area))
+        w = eig_vecs.T
         return w
 
 

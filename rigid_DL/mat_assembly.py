@@ -70,7 +70,7 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
         face_hs = lin_geo_mesh.get_hs(face_num)
         for src_num in range(num_nodes): # source points
             src_pt = pot_nodes[src_num]
-            is_singular, local_singular_ind = lin_pot_mesh.check_in_face(src_num, face_num)
+            is_singular, _local_singular_ind = lin_pot_mesh.check_in_face(src_num, face_num)
             if not is_singular: # regular triangle
                 for node_num in range(3):
                     node_global_num = pot_faces[face_num, node_num] # global index for vert
@@ -82,24 +82,22 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
                         face_hs
                     )
                     C[(3 * src_num):(3 * src_num + 3),
-                      (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
+                      (3 * node_global_num):(3 * node_global_num + 3)] += c_0 * sub_mat
                 # subtracting the q(x_0) term
                 sub_mat = gq.int_over_tri_lin(
                     make_cp_le_quad_func(face_n, src_pt),
                     face_nodes,
                     face_hs
                 )
-                C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
-            # alwaus evaluates to zero for singular flat triangles
+                C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * sub_mat
+            # always evaluates to zero for singular flat triangles
             # from \hat{x} vector being orthogonal to normal vector
 
     for src_num in range(num_nodes): # source points
         # whole surface q(x_0) term
-        C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= (
+        C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * (
             4. * np.pi * np.identity(3)
         )
-
-    C = np.dot(c_0, C)
     return C
 
 

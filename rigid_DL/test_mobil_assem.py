@@ -43,37 +43,68 @@ for cell_block in io_mesh.cells:
 geo_mesh = lin_geo_mesh.Lin_Geo_Mesh(verts, faces)
 if args.is_sphere:
     geo_mesh.is_sphere = True
+mu = args.mu
+E_d = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
+E_c = np.zeros(3)
+f = np.array([0., 0., 0.,]) # force
+l = np.array([1., 0., 0,]) # torque
+
+"""
 pot_mesh = cons_pot_mesh.Cons_Pot_Mesh.make_from_geo_mesh(geo_mesh)
 K = m_a.make_mat_cp_le(pot_mesh, geo_mesh)
 eig_vals, eig_vecs = np.linalg.eig(K)
 
-out_file = "{}_eig.txt".format(args.out_tag)
+out_file = "{}_cp_le_eig.txt".format(args.out_tag)
 with open(out_file, 'w') as out:
     out.write("eigenvalues\n")
-    for a in eig_vals.real:
+    for a in sorted(eig_vals.real):
         out.write("{}\n".format(a))
-mu = args.mu
 num_nodes = pot_mesh.get_nodes().shape[0]
 
-E_d = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
-E_c = np.zeros(3)
 u_d = eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
 u_d = np.ravel(u_d)
 
-f = np.array([0., 0., 0.,]) # force
-l = np.array([1., 0., 0,]) # torque
-try_direct = True
-fv = m_a.make_cp_le_forcing_vec_direct(pot_mesh, geo_mesh, u_d, f, l, mu)
+fv = m_a.make_forcing_vec(pot_mesh, geo_mesh, u_d, f, l, mu)
 q = np.linalg.solve(K + np.identity(3*num_nodes), fv)
 
-q_file= "{}_sol.txt".format(args.out_tag)
+q_file= "{}_cp_le_sol.txt".format(args.out_tag)
 with open(q_file, 'w') as out:
     out.write("q, u_d\n")
     for i, a in enumerate(q):
         out.write("{}, {}\n".format(a, u_d[i]))
 
-trans_v = mobil_helper.calc_le_trans_vel(geo_mesh, q)
-print("Particle translational velocity: {}".format(trans_v))
+trans_v = mobil_helper.calc_cp_le_trans_vel(geo_mesh, q)
+print("cp_le Particle translational velocity: {}".format(trans_v))
 
-rot_v = mobil_helper.calc_le_rot_vel(geo_mesh, q)
-print("Particle rotational velocity: {}".format(rot_v))
+rot_v = mobil_helper.calc_cp_le_rot_vel(geo_mesh, q)
+print("cp_le Particle rotational velocity: {}".format(rot_v))
+
+"""
+
+pot_mesh = lin_pot_mesh.Lin_Pot_Mesh.make_from_lin_geo_mesh(geo_mesh)
+num_nodes = pot_mesh.get_nodes().shape[0]
+K = m_a.make_mat_lp_le(pot_mesh, geo_mesh)
+eig_vals, eig_vecs = np.linalg.eig(K)
+
+out_file = "{}_lp_le_eig.txt".format(args.out_tag)
+with open(out_file, 'w') as out:
+    out.write("eigenvalues\n")
+    for a in sorted(eig_vals.real):
+        out.write("{}\n".format(a))
+
+u_d = eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
+u_d = np.ravel(u_d)
+fv = m_a.make_forcing_vec(pot_mesh, geo_mesh, u_d, f, l, mu)
+q = np.linalg.solve(K + np.identity(3 * num_nodes), fv)
+
+q_file = "{}_lp_le_sol.txt".format(args.out_tag)
+with open(q_file, 'w') as out:
+    out.write("q, u_d\n")
+    for i, a in enumerate(q):
+        out.write("{}, {}\n".format(a, u_d[i]))
+
+trans_v = mobil_helper.calc_lp_le_trans_vel(pot_mesh, geo_mesh, q)
+print("lp_le Particle translational velocity: {}".format(trans_v))
+
+rot_v = mobil_helper.calc_lp_le_rot_vel(pot_mesh, geo_mesh, q)
+print("lp_le Particle rotational velocity: {}".format(rot_v))

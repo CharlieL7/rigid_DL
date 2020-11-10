@@ -4,8 +4,8 @@ import numpy as np
 
 
 LC_3 = np.zeros((3, 3, 3)) # 3D Levi_Civita Tensor
-LC_3[[0, 1, 2], [1, 2, 0], [2, 0, 1]] = 1.
-LC_3[[0, 2, 1], [1, 0, 2], [2, 1, 0]] = -1.
+LC_3[0, 1, 2] = LC_3[1, 2, 0] = LC_3[2, 0, 1] = 1.
+LC_3[0, 2, 1] = LC_3[1, 0, 2] = LC_3[2, 1, 0] = -1.
 
 
 def pos_linear(xi, eta, nodes):

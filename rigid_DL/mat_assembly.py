@@ -10,7 +10,6 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     Makes the stiffness matrix using closed surface singularity subtraction.
     For constant potentials over a linear elements.
     Faces loop over source points loop.
-
     Parameters:
         cons_pot_mesh: constant potential mesh
         lin_geo_mesh : linear geometric mesh
@@ -50,7 +49,6 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
     """
     Makes the stiffness matrix using closed surface singularity subtraction.
     For linear potentials over a linear elements.
-
     Parameters:
         lin_pot_mesh: linear potential mesh
         lin_geo_mesh : linear geometric mesh
@@ -121,7 +119,6 @@ def make_mat_cp_qe(cons_pot_mesh, quad_geo_mesh):
     """
     Makes the stiffness matrix using closed surface singularity subtraction.
     For constant potentials over quadratic elements.
-
     Parameters:
         cons_pot_mesh: constant potential mesh
         quad_geo_mesh : quadratic geometric mesh
@@ -162,7 +159,6 @@ def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
     """
     Makes the stiffness matrix using closed surface singularity subtraction.
     For linear potentials over quadratic elements.
-
     Parameters:
         lin_pot_mesh: linear potential mesh
         quad_geo_mesh: quadratic geometric mesh
@@ -230,7 +226,6 @@ def make_cp_le_quad_func(n, x_0):
     """
     Makes the constant potential function that is integrated over
     linear elements for the stiffness matrix
-
     Parameters:
         n: unit normal vector
         x_0: the source point
@@ -245,7 +240,6 @@ def make_cp_qe_quad_func(x_0):
     """"
     Makes the constant potential function that is integrated over
     quadratic elements for the stiffness matrix
-
     Parameters:
         x_0: the source point
     """
@@ -259,7 +253,6 @@ def make_reg_lp_le_quad_func(n, x_0, node_num):
     """
     Makes the regular (non-singular) linear potential, linear element function
     that is integrated for the stiffness matrix
-
     Parameters:
         n: unit normal vector
         x_0: source point
@@ -277,7 +270,6 @@ def make_reg_lp_qe_quad_func(x_0, node_num):
     """
     Makes the regular (non-singular) linear potential, quadratic element function
     that is integrated for the stiffness matrix
-
     Parameters:
         x_0: source point
         node_num: which potential shape function [0, 1, 2]
@@ -297,7 +289,6 @@ def make_sing_lp_le_quad_func(n, x_0, node_num, singular_ind):
     
     NOTE: This always evaluates to zero because the \hat{x} is perpendicular to the normal vector
     for linear elements.
-
     Parameters:
         n: unit normal vector
         x_0: source point
@@ -325,7 +316,6 @@ def make_sing_lp_qe_quad_func(x_0, node_num, singular_ind):
     """
     Makes the sinuglar linear potential, quadratic element function
     that is dotted with normal vectors and integrated for the stiffness matrix
-
     Parameters:
         x_0: source point
         node_num: which potential shape function [0, 1, 2]

@@ -71,21 +71,7 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
         for src_num in range(num_nodes): # source points
             src_pt = pot_nodes[src_num]
             is_singular, local_singular_ind = lin_pot_mesh.check_in_face(src_num, face_num)
-
-            if is_singular: # singular triangle
-                for node_num in range(3):
-                    node_global_num = pot_faces[face_num, node_num] # global index for vert
-                    sub_mat = gq.int_over_tri_lin(
-                        make_sing_lp_le_quad_func(
-                            face_n, src_pt, node_num, local_singular_ind
-                            ),
-                        face_nodes,
-                        face_hs
-                    )
-                    C[(3 * src_num):(3 * src_num + 3),
-                      (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
-
-            else: # regular triangle
+            if not is_singular: # regular triangle
                 for node_num in range(3):
                     node_global_num = pot_faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_lin(
@@ -104,6 +90,8 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
                     face_hs
                 )
                 C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
+            # alwaus evaluates to zero for singular flat triangles
+            # from \hat{x} vector being orthogonal to normal vector
 
     for src_num in range(num_nodes): # source points
         # whole surface q(x_0) term
@@ -279,36 +267,6 @@ def make_reg_lp_qe_quad_func(x_0, node_num):
         S = geo.stresslet(x, x_0)
         phi = geo.shape_func_linear(xi, eta, node_num)
         return phi * S
-    return quad_func
-
-
-def make_sing_lp_le_quad_func(n, x_0, node_num, singular_ind):
-    """
-    Makes the sinuglar linear potential, linear element function
-    that is integrated for the stiffness matrix
-    
-    NOTE: This always evaluates to zero because the \hat{x} is perpendicular to the normal vector
-    for linear elements.
-    Parameters:
-        n: unit normal vector
-        x_0: source point
-        node_num: which shape function
-        singular_ind: local singular index for a face
-    """
-    def quad_func(xi, eta, nodes):
-        x = geo.pos_linear(xi, eta, nodes)
-        phi = geo.shape_func_linear(xi, eta, node_num)
-        # shape function for source point is [1, 0, 0], [0, 1, 0], or [0, 0, 1]
-        if node_num == singular_ind:
-            if (phi - 1) == 0: # getting around division by 0
-                return np.zeros([3, 3])
-            else:
-                return (phi - 1) * geo.stresslet_n(x, x_0, n)
-        else:
-            if phi == 0:
-                return np.zeros([3, 3])
-            else:
-                return (phi) * geo.stresslet_n(x, x_0, n)
     return quad_func
 
 

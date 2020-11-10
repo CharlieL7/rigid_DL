@@ -183,7 +183,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
 
     def calc_ellip_dims(self):
         """
-        Rotate the mesh by eigenvectors of the moment of inertia tensor and then 
+        Rotate the mesh by eigenvectors of the moment of inertia tensor and then
         get the lengths along each axis
         """
 

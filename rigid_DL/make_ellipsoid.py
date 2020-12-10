@@ -52,8 +52,8 @@ def scale_mesh(dims, verts):
     Returns:
         scaled vertices
     """
-    # starting with a unit sphere, so transformation divided by 2
-    abc = np.array(dims) / 2.
+    # starting with a unit sphere
+    abc = np.array(dims).
     return np.einsum("ij,j->ij", verts, abc)
 
 

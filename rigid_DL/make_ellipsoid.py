@@ -53,7 +53,7 @@ def scale_mesh(dims, verts):
         scaled vertices
     """
     # starting with a unit sphere
-    abc = np.array(dims).
+    abc = np.array(dims)
     return np.einsum("ij,j->ij", verts, abc)
 
 

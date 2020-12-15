@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import rigid_DL.geometric as geo
 
-class TestGeometrc(unittest.TestCase):
+class TestGeometric(unittest.TestCase):
 
     def test_pos_linear(self):
         nodes = np.identity(3)

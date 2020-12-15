@@ -30,7 +30,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.normalize_n() # normal vectors normalized
         self.mom_inertia = self.calc_moment_inertia_tensor()
         self.dims = self.calc_ellip_dims()
-        self.is_sphere = False
 
 
     def get_verts(self):
@@ -202,7 +201,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
             eigvecs[:, 2] = -eigvecs[:, 2]
 
         x_rot = np.matmul(self.verts, eigvecs)
-        a = np.amax(x_rot[:, 0]) - np.amin(x_rot[:, 0])
-        b = np.amax(x_rot[:, 1]) - np.amin(x_rot[:, 1])
-        c = np.amax(x_rot[:, 2]) - np.amin(x_rot[:, 2])
+        a = (np.amax(x_rot[:, 0]) - np.amin(x_rot[:, 0])) / 2.
+        b = (np.amax(x_rot[:, 1]) - np.amin(x_rot[:, 1])) / 2.
+        c = (np.amax(x_rot[:, 2]) - np.amin(x_rot[:, 2])) / 2.
         return (a, b, c)

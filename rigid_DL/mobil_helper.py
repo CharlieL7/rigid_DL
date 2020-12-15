@@ -40,7 +40,7 @@ def calc_cp_le_rot_vel(lin_geo_mesh, q):
     """
     num_faces = lin_geo_mesh.get_faces().shape[0]
     x_c = lin_geo_mesh.get_centroid()
-    w = lin_geo_mesh.calc_rotation_vectors()
+    w = np.identity(3)
     omega_vec = 0.
     A_m = calc_le_Am_vec(lin_geo_mesh)
     for face_num in range(num_faces):
@@ -121,7 +121,7 @@ def calc_lp_le_rot_vel(lin_pot_mesh, lin_geo_mesh, q):
     num_faces = lin_pot_mesh.get_faces().shape[0]
     pot_faces = lin_pot_mesh.get_faces()
     x_c = lin_geo_mesh.get_centroid()
-    w = lin_geo_mesh.calc_rotation_vectors()
+    w = np.identity(3)
     omega_vec = 0.
     A_m = calc_le_Am_vec(lin_geo_mesh)
     for face_num in range(num_faces):
@@ -166,7 +166,7 @@ def calc_le_Am_vec(lin_geo_mesh):
     """
     num_faces = lin_geo_mesh.get_faces().shape[0]
     x_c = lin_geo_mesh.get_centroid()
-    w = lin_geo_mesh.calc_rotation_vectors()
+    w = np.identity(3)
     A_m = np.zeros(3)
     for m in range(3):
         def make_am_quad_func(w_m):

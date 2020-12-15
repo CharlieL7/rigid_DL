@@ -11,7 +11,6 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     Mobility problem.
     Makes the stiffness matrix using closed surface singularity subtraction.
     For constant potentials over linear elements.
-
     Parameters:
         cons_pot_mesh: constant potential mesh
         lin_geo_mesh : linear geometric mesh
@@ -75,8 +74,10 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
     """
     num_faces = cons_pot_mesh.get_faces().shape[0]
     x_c = lin_geo_mesh.get_centroid()
-    w = lin_geo_mesh.calc_rotation_vectors()
+    w = np.identity(3)
     A_m = mobil_helper.calc_le_Am_vec(lin_geo_mesh)
+    print("A_m:")
+    print(A_m)
     S_D = lin_geo_mesh.get_surface_area()
 
     for face_num in range(num_faces):
@@ -101,9 +102,9 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
               (3 * face_num):(3 * face_num + 3)] += -1. / (4. * np.pi) * v_sub_mat
             src_center = cons_pot_mesh.get_node(src_num)
             X_0 = src_center - x_c
-            omega_mat = np.einsum("ijk,js,k", geo.LC_3, tmp_omega_mat, X_0)
+            omega_mat = np.einsum("ijk,js,k->is", geo.LC_3, tmp_omega_mat, X_0)
             K[(3 * src_num):(3 * src_num + 3),
-              (3 * face_num):(3 * face_num + 3)] += 1. / (4. * np.pi) * omega_mat # error?
+              (3 * face_num):(3 * face_num + 3)] += -1. / (4. * np.pi) * omega_mat # error?
 
 
 def add_cp_le_n_terms(K, cons_pot_mesh, lin_geo_mesh):
@@ -241,7 +242,6 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
     Mobility problem.
     Makes the stiffness matrix using closed surface singularity subtraction.
     For constant potentials over linear elements.
-
     Parameters:
         lin_pot_mesh: linear potential mesh
         lin_geo_mesh: linear geometric mesh
@@ -326,7 +326,7 @@ def add_lp_le_RBM_terms(K, lin_pot_mesh, lin_geo_mesh):
     num_nodes = pot_nodes.shape[0]
     S_D = lin_geo_mesh.get_surface_area()
     x_c = lin_geo_mesh.get_centroid()
-    w = lin_geo_mesh.calc_rotation_vectors()
+    w = np.identity(3)
     A_m = mobil_helper.calc_le_Am_vec(lin_geo_mesh)
 
     for face_num in range(num_faces):
@@ -356,7 +356,7 @@ def add_lp_le_RBM_terms(K, lin_pot_mesh, lin_geo_mesh):
                 X_0 = src_pt - x_c
                 omega_mat = np.einsum("ijk,js,k", geo.LC_3, tmp_omega_mat, X_0)
                 K[(3 * src_num):(3 * src_num + 3),
-                  j:j+3] += 1. / (4. * np.pi) * (omega_mat)
+                  j:j+3] += 1. / (4. * np.pi) * (omega_mat) #error?
 
 
 def make_DL_reg_lp_le_quad_func(n, x_0, node_num):

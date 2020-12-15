@@ -40,9 +40,9 @@ def calc_cp_le_rot_vel(lin_geo_mesh, q):
     """
     num_faces = lin_geo_mesh.get_faces().shape[0]
     x_c = lin_geo_mesh.get_centroid()
-    w = np.identity(3)
+    w = lin_geo_mesh.get_w()
+    A_m = lin_geo_mesh.get_A_m()
     omega_vec = 0.
-    A_m = calc_le_Am_vec(lin_geo_mesh)
     for face_num in range(num_faces):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_hs = lin_geo_mesh.get_hs(face_num)
@@ -121,9 +121,9 @@ def calc_lp_le_rot_vel(lin_pot_mesh, lin_geo_mesh, q):
     num_faces = lin_pot_mesh.get_faces().shape[0]
     pot_faces = lin_pot_mesh.get_faces()
     x_c = lin_geo_mesh.get_centroid()
-    w = np.identity(3)
+    w = lin_geo_mesh.get_w()
+    A_m = lin_geo_mesh.get_A_m()
     omega_vec = 0.
-    A_m = calc_le_Am_vec(lin_geo_mesh)
     for face_num in range(num_faces):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_hs = lin_geo_mesh.get_hs(face_num)
@@ -158,6 +158,7 @@ def calc_lp_le_rot_vel(lin_pot_mesh, lin_geo_mesh, q):
 
 def calc_le_Am_vec(lin_geo_mesh):
     """
+    Deprecated, version calculated from moment of inertia tensor better.
     Calculate the A_m vector given a linear geometric mesh.
     Parameters:
         lin_geo_mesh: linear geometric mesh

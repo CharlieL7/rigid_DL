@@ -13,7 +13,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
     def __init__(self, x, f):
         """
         Constructor for the simple_mesh object.
-
         Parameters:
             x : verts in list-like object (Nv, 3)
             f : list-like with indices to verts of a triangle
@@ -30,6 +29,11 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.normalize_n() # normal vectors normalized
         self.mom_inertia = self.calc_moment_inertia_tensor()
         self.dims = self.calc_ellip_dims()
+        (self.w, self.A_m) = self.calc_rotation_eig()
+        print("lin_geo w:")
+        print(self.w)
+        print("lin_geo A_m:")
+        print(self.A_m)
 
 
     def get_verts(self):
@@ -51,7 +55,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
     def get_tri_nodes(self, face_num):
         """
         Gets the nodes of a face and puts nodes into a (3, 3) matrix
-
         Paramters:
             face_num : face number
         Returns:
@@ -68,7 +71,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
     def get_tri_center(self, face_num):
         """
         Calculates the centroid point on a face
-
         Parameters:
             face_num : face number
         Returns:
@@ -82,7 +84,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
     def get_normal(self, face_num):
         """
         Return normal vector for face.
-
         Parameters:
             face_num: face numbers
         Returns:
@@ -94,13 +95,26 @@ class Lin_Geo_Mesh(Geo_Mesh):
     def get_hs(self, face_num):
         """
         Return hs value for face.
-
         Parameters:
             face_num: face numbers
         Returns:
             hs: scalar
         """
         return self.hs[face_num]
+
+
+    def get_w(self):
+        """
+        Return rotation vectors for rotation eigenfunction
+        """
+        return self.w
+
+
+    def get_A_m(self):
+        """
+        Return eigenvalues of moment of inertia tensor
+        """
+        return self.A_m
 
 
     def calc_all_n(self):
@@ -163,21 +177,20 @@ class Lin_Geo_Mesh(Geo_Mesh):
         for i, face in enumerate(self.faces):
             nodes = self.get_tri_nodes(i)
             inertia_tensor += gq.int_over_tri_lin(geo.inertia_func_linear, nodes, self.hs[i])
-        inertia_tensor /= self.surf_area
         return inertia_tensor
 
 
-    def calc_rotation_vectors(self):
+    def calc_rotation_eig(self):
         """
         Calculates the rotation vectors (eigenvectors of moment of inertia)
         Be careful of sphere case when this basis is no longer orthogonal.
-        Pretty sure can just use cartesional unit vectors for every case.
         """
-        if self.is_sphere:
-            return np.identity(3)
         eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
+        idx = eig_vals.argsort()
+        eig_vals = eig_vals[idx]
+        eig_vecs = eig_vecs[:, idx]
         w = eig_vecs.T
-        return w
+        return (w, eig_vals)
 
 
     def calc_ellip_dims(self):

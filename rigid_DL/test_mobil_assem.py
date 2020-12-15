@@ -34,9 +34,9 @@ for cell_block in io_mesh.cells:
         faces = cell_block.data
         break
 
+dims = args.dims
 geo_mesh = lin_geo_mesh.Lin_Geo_Mesh(verts, faces)
 mu = args.mu
-dims = args.dims
 print("Dims:")
 print(dims)
 E_d, E_c = eig_funs.E_12(geo_mesh, dims)
@@ -81,7 +81,13 @@ print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))
 pot_mesh = lin_pot_mesh.Lin_Pot_Mesh.make_from_lin_geo_mesh(geo_mesh)
 num_nodes = pot_mesh.get_nodes().shape[0]
 K = m_a.make_mat_lp_le(pot_mesh, geo_mesh)
-eig_vals, eig_vecs = np.linalg.eig(K + np.identity(3 * num_nodes))
+eig_vals, eig_vecs = np.linalg.eig(K)
+
+out_file = "{}_lp_le_eig.txt".format(args.out_tag)
+with open(out_file, 'w') as out:
+    out.write("eigenvalues\n")
+    for a in sorted(eig_vals.real):
+        out.write("{}\n".format(a))
 
 u_d = eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
 

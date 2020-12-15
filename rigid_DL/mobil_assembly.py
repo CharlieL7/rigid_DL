@@ -74,20 +74,18 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
     """
     num_faces = cons_pot_mesh.get_faces().shape[0]
     x_c = lin_geo_mesh.get_centroid()
-    w = np.identity(3)
-    A_m = mobil_helper.calc_le_Am_vec(lin_geo_mesh)
-    print("A_m:")
-    print(A_m)
+    w = lin_geo_mesh.get_w()
+    A_m = lin_geo_mesh.get_A_m()
     S_D = lin_geo_mesh.get_surface_area()
 
     for face_num in range(num_faces):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_hs = lin_geo_mesh.get_hs(face_num)
-        v_sub_mat = (-4. * np.pi / S_D) * (np.identity(3) * 0.5 * face_hs) # simple integral
+        v_sub_mat = (1. / S_D) * (np.identity(3) * 0.5 * face_hs) # simple integral
         def omega_quad(xi, eta, nodes):
             pos = geo.pos_linear(xi, eta, nodes)
             X = pos - x_c
-            return np.einsum("lrs,r", geo.LC_3, X)
+            return np.einsum("lrs,s->lr", geo.LC_3, X)
         tmp_omega = gq.int_over_tri_lin(
             omega_quad,
             face_nodes,
@@ -95,16 +93,68 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
         )
         tmp_arr = []
         for m in range(3):
-            tmp_arr.append((1./ A_m[m]) * np.einsum("j,l,ls", w[m], w[m], tmp_omega))
-        tmp_omega_mat = -4. * np.pi * np.sum(tmp_arr, axis=0)
+            #not sure why, but this is negative of what is needed
+            #tmp_arr.append((1./ A_m[m]) * np.einsum("j,l,ls->js", w[m], w[m], tmp_omega))
+            tmp_arr.append((1./ A_m[m]) * np.outer(w[m], np.einsum("l,ls", w[m], tmp_omega)))
+        tmp_arr = np.array(tmp_arr)
+        tmp_omega_mat = np.sum(tmp_arr, axis=0)
         for src_num in range(num_faces):
             K[(3 * src_num):(3 * src_num + 3),
-              (3 * face_num):(3 * face_num + 3)] += -1. / (4. * np.pi) * v_sub_mat
+              (3 * face_num):(3 * face_num + 3)] += v_sub_mat
             src_center = cons_pot_mesh.get_node(src_num)
             X_0 = src_center - x_c
             omega_mat = np.einsum("ijk,js,k->is", geo.LC_3, tmp_omega_mat, X_0)
             K[(3 * src_num):(3 * src_num + 3),
-              (3 * face_num):(3 * face_num + 3)] += -1. / (4. * np.pi) * omega_mat # error?
+              (3 * face_num):(3 * face_num + 3)] += omega_mat # sign error?
+
+
+def add_cp_le_RBM_terms_alt(K, cons_pot_mesh, lin_geo_mesh):
+    """
+    Alternative using np.cross()
+    Add rigid body motion terms to the given stiffness matrix K.
+    For constant potential and linear elements.
+    Parameters:
+        K: stiffness matrix to add terms to (3 * face_num, 3 * face_num) ndarray
+        cons_pot_mesh: constant potential mesh
+        lin_geo_mesh : linear geometric mesh
+    Returns:
+        None
+    """
+    num_faces = cons_pot_mesh.get_faces().shape[0]
+    x_c = lin_geo_mesh.get_centroid()
+    w = lin_geo_mesh.get_w()
+    A_m = lin_geo_mesh.get_A_m()
+    S_D = lin_geo_mesh.get_surface_area()
+
+    for face_num in range(num_faces):
+        face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
+        face_hs = lin_geo_mesh.get_hs(face_num)
+        v_sub_mat = (1. / S_D) * (np.identity(3) * 0.5 * face_hs) # simple integral
+        tmp_omega = []
+        for m in range(3):
+            def make_omega_quad(w, A_m):
+                def omega_quad(xi, eta, nodes):
+                    pos = geo.pos_linear(xi, eta, nodes)
+                    X = pos - x_c
+                    return np.cross(w, X)
+                return omega_quad
+            tmp_omega.append(gq.int_over_tri_lin(
+                make_omega_quad(w[m], A_m[m]),
+                face_nodes,
+                face_hs,
+            ))
+        for src_num in range(num_faces):
+            K[(3 * src_num):(3 * src_num + 3),
+              (3 * face_num):(3 * face_num + 3)] += v_sub_mat
+            src_center = cons_pot_mesh.get_node(src_num)
+            X_0 = src_center - x_c
+            tmp_arr = []
+            for m in range(3):
+                tmp_arr.append(np.outer((1./ A_m[m]) * np.cross(w[m], X_0), tmp_omega[m]))
+            tmp_arr = np.array(tmp_arr)
+            omega_mat = np.sum(tmp_arr, axis=0)
+            K[(3 * src_num):(3 * src_num + 3),
+              (3 * face_num):(3 * face_num + 3)] += omega_mat
 
 
 def add_cp_le_n_terms(K, cons_pot_mesh, lin_geo_mesh):
@@ -326,8 +376,8 @@ def add_lp_le_RBM_terms(K, lin_pot_mesh, lin_geo_mesh):
     num_nodes = pot_nodes.shape[0]
     S_D = lin_geo_mesh.get_surface_area()
     x_c = lin_geo_mesh.get_centroid()
-    w = np.identity(3)
-    A_m = mobil_helper.calc_le_Am_vec(lin_geo_mesh)
+    w = lin_geo_mesh.get_w()
+    A_m = lin_geo_mesh.get_A_m()
 
     for face_num in range(num_faces):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
@@ -347,7 +397,7 @@ def add_lp_le_RBM_terms(K, lin_pot_mesh, lin_geo_mesh):
             )
             tmp_arr = []
             for m in range(3):
-                tmp_arr.append((1./ A_m[m]) * np.einsum("j,l,ls", w[m], w[m], tmp_omega))
+                tmp_arr.append((1./ A_m[m]) * np.outer(w[m], np.einsum("l, ls", w[m], tmp_omega)))
             tmp_omega_mat = -4. * np.pi * np.sum(tmp_arr, axis=0)
             for src_num in range(num_nodes):
                 K[(3 * src_num):(3 * src_num + 3),
@@ -356,7 +406,7 @@ def add_lp_le_RBM_terms(K, lin_pot_mesh, lin_geo_mesh):
                 X_0 = src_pt - x_c
                 omega_mat = np.einsum("ijk,js,k", geo.LC_3, tmp_omega_mat, X_0)
                 K[(3 * src_num):(3 * src_num + 3),
-                  j:j+3] += 1. / (4. * np.pi) * (omega_mat) #error?
+                  j:j+3] += 1. / (4. * np.pi) * (omega_mat)
 
 
 def make_DL_reg_lp_le_quad_func(n, x_0, node_num):

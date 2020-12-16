@@ -39,8 +39,18 @@ geo_mesh = lin_geo_mesh.Lin_Geo_Mesh(verts, faces)
 mu = args.mu
 print("Dims:")
 print(dims)
-E_d, E_c = eig_funs.E_12(geo_mesh, dims)
-eigval = eig_vals.lambda_12(dims)
+"""
+E_d = np.array([
+    [0., 1., 0.,],
+    [-1., 0., 0.,],
+    [0., 0., 0.,]
+])
+E_c = np.zeros(3)
+"""
+#E_d, E_c = eig_funs.E_12(dims)
+E_d, E_c = eig_funs.diag_eigvec("+", dims)
+#eigval = eig_vals.lambda_12(dims)
+eigval = eig_vals.lambda_pm("+", dims)
 f = np.array([0., 0., 0.,]) # force
 l = np.array([0., 0., 0,]) # torque
 print("eigenvalue: {}".format(eigval))
@@ -65,16 +75,16 @@ np.savetxt("q_vec_cp_le_R12.csv", np.reshape(q, (num_nodes, 3)), delimiter=",")
 np.savetxt("eig_vec_cp_le_E12.csv", np.reshape(psi, (num_nodes, 3)), delimiter=",")
 
 trans_v = mobil_helper.calc_cp_le_trans_vel(geo_mesh, q)
-print("cp_le Particle translational velocity: {}".format(trans_v))
+print("cp_le Particle translational velocity: {}".format(repr(trans_v)))
 
 rot_v = mobil_helper.calc_cp_le_rot_vel(geo_mesh, q)
-print("cp_le Particle rotational velocity: {}".format(rot_v))
+print("cp_le Particle rotational velocity: {}".format(repr(rot_v)))
 
 tmp_0 = psi
 tmp_1 = q
 print("cp_le Colinearity:")
 print(np.dot(tmp_0 / np.linalg.norm(tmp_0), tmp_1 / np.linalg.norm(tmp_1)))
-print("cp_le Whole Relative L2 Error:")
+print("cp_le Total Relative L2 Error:")
 print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))
 
 # lp_le version
@@ -98,14 +108,14 @@ np.savetxt("q_vec_lp_le_E12.csv", q_reshape, delimiter=",")
 np.savetxt("eig_vec_lp_le_E12.csv", np.reshape(psi, (num_nodes, 3)), delimiter=",")
 
 trans_v = mobil_helper.calc_lp_le_trans_vel(pot_mesh, geo_mesh, q)
-print("lp_le Particle translational velocity: {}".format(trans_v))
+print("lp_le Particle translational velocity: {}".format(repr(trans_v)))
 
 rot_v = mobil_helper.calc_lp_le_rot_vel(pot_mesh, geo_mesh, q)
-print("lp_le Particle rotational velocity: {}".format(rot_v))
+print("lp_le Particle rotational velocity: {}".format(repr(rot_v)))
 
 tmp_0 = psi
 tmp_1 = q
 print("lp_le Colinearity:")
 print(np.dot(tmp_0 / np.linalg.norm(tmp_0), tmp_1 / np.linalg.norm(tmp_1)))
-print("lp_le Whole Relative L2 Error:")
+print("lp_le Total Relative L2 Error:")
 print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))

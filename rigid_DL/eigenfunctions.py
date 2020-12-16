@@ -8,67 +8,67 @@ import rigid_DL.eigenvalues as ev
 import rigid_DL.geometric as geo
 import rigid_DL.elliptic_integrals as e_int
 
-def E_12(geo_mesh, dims):
+def E_12(dims):
     """
     Off diagonal (12) rate of strain field eigenfunction
     Returns velocites at each vertex in cartesional coordinates
 
     Parameters:
-        geo_mesh : geo_mesh input for dimensions
-    Returns;
+        dims: ellipsoid dimensions
+    Returns
     """
-    E_d = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
+    E_d = np.array([[0., 1., 0.], [1., 0., 0.], [0., 0., 0.]])
     a, b, _c = dims
-    E_c = (a**2 - b**2)/(a**2 + b**2) * E_d[0, 1] * np.array([0, 0, 1])
+    E_c = (a**2 - b**2)/(a**2 + b**2) * E_d[0, 1] * np.array([0., 0., 1.])
     return (E_d, E_c)
 
 
-def E_31(geo_mesh, dims):
-    E_d = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
+def E_31(dims):
+    E_d = np.array([[0., 0., 1.], [0., 0., 0.], [1., 0., 0.]])
     a, _b, c = dims
-    E_c = (c**2 - a**2)/(c**2 + a**2) * E_d[0, 2] * np.array([0, 1, 0])
+    E_c = (c**2 - a**2)/(c**2 + a**2) * E_d[0, 2] * np.array([0., 1., 0.])
     return (E_d, E_c)
 
 
-def E_23(geo_mesh, dims):
-    E_d = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
+def E_23(dims):
+    E_d = np.array([[0., 0., 0.], [0., 0., 1.], [0., 1., 0.]])
     _a, b, c = dims
-    E_c = (b**2 - c**2)/(b**2 + c**2) * E_d[1, 2] * np.array([1, 0, 0])
+    E_c = (b**2 - c**2)/(b**2 + c**2) * E_d[1, 2] * np.array([1., 0., 0.])
     return (E_d, E_c)
 
 
 def uni_x():
-    E_d = np.array([[2, 0, 0], [0, -1, 0], [0, 0, -1]])
-    E_c = np.array([0, 0, 0])
+    E_d = np.array([[2., 0., 0.], [0., -1., 0.], [0., 0., -1.]])
+    E_c = np.zeros(3)
     return (E_d, E_c)
 
 
 def hyper_yz():
-    E_d = np.array([[0, 0, 0], [0, 1, 0], [0, 0, -1]])
-    E_c = np.array([0, 0, 0])
+    E_d = np.array([[0., 0., 0.], [0., 1., 0.], [0., 0., -1.]])
+    E_c = np.zeros(3)
     return (E_d, E_c)
 
 
 def uni_z():
-    E_d = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 2]])
-    E_c = np.array([0, 0, 0])
+    E_d = np.array([[-1., 0., 0.], [0., -1., 0.], [0., 0., 2.]])
+    E_c = np.zeros(3)
     return (E_d, E_c)
 
 
 def hyper_xy():
-    E_d = np.array([[1, 0, 0], [0, -1, 0], [0, 0, 0]])
-    E_c = np.array([0, 0, 0])
+    E_d = np.array([[1., 0., 0.], [0., -1., 0.], [0., 0., 0.]])
+    E_c = np.zeros(3)
     return (E_d, E_c)
 
 
-def diag_eigvec(pm, geo_mesh, dims):
+def diag_eigvec(pm, dims):
     """
     Calculates the eigenfunctions associated with the diagonal terms
     of the linear rate of strain field.
 
     Parameters:
         pm: the plus or minus eigenvalue
-        geo_mesh: geo_mesh data structure
+        dims: ellipsoid dimensions
     Returns:
         E_d and E_c matricies for dotting with position
     """

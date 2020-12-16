@@ -30,10 +30,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.mom_inertia = self.calc_moment_inertia_tensor()
         self.dims = self.calc_ellip_dims()
         (self.w, self.A_m) = self.calc_rotation_eig()
-        print("lin_geo w:")
-        print(self.w)
-        print("lin_geo A_m:")
-        print(self.A_m)
 
 
     def get_verts(self):

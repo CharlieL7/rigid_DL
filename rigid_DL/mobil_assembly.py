@@ -76,6 +76,10 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
     x_c = lin_geo_mesh.get_centroid()
     w = lin_geo_mesh.get_w()
     A_m = lin_geo_mesh.get_A_m()
+    print("Original eigenvalue of M:")
+    print(A_m)
+    print("Other method:")
+    print(mobil_helper.calc_le_Am_vec(lin_geo_mesh))
     S_D = lin_geo_mesh.get_surface_area()
 
     for face_num in range(num_faces):
@@ -93,8 +97,6 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
         )
         tmp_arr = []
         for m in range(3):
-            #not sure why, but this is negative of what is needed
-            #tmp_arr.append((1./ A_m[m]) * np.einsum("j,l,ls->js", w[m], w[m], tmp_omega))
             tmp_arr.append((1./ A_m[m]) * np.outer(w[m], np.einsum("l,ls", w[m], tmp_omega)))
         tmp_arr = np.array(tmp_arr)
         tmp_omega_mat = np.sum(tmp_arr, axis=0)
@@ -105,7 +107,7 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
             X_0 = src_center - x_c
             omega_mat = np.einsum("ijk,js,k->is", geo.LC_3, tmp_omega_mat, X_0)
             K[(3 * src_num):(3 * src_num + 3),
-              (3 * face_num):(3 * face_num + 3)] += omega_mat # sign error?
+              (3 * face_num):(3 * face_num + 3)] += omega_mat
 
 
 def add_cp_le_RBM_terms_alt(K, cons_pot_mesh, lin_geo_mesh):
@@ -238,8 +240,7 @@ def make_cp_le_forcing_vec_SS(cons_pot_mesh, lin_geo_mesh, u_d, f, l, mu):
 
 def make_forcing_vec(pot_mesh, geo_mesh, u_d, f, l, mu):
     """
-    Makes the forcing vector ( f ) for the mobility problem given a
-    constant potential mesh and linear geometric mesh.
+    Makes the forcing vector ( f ) for the mobility problem 
     For the direct solution method.
     Parameters:
         pot_mesh: potential mesh
@@ -442,37 +443,122 @@ def make_lp_le_omega_quad(node_num, x_c):
     return omega_quad
 
 
-def make_lp_le_forcing_vec(lin_pot_mesh, lin_geo_mesh, u_d, f, l, mu):
+def make_mat_cp_qe(cons_pot_mesh, quad_geo_mesh):
     """
-    Makes the forcing vector ( f ) for the mobility problem
-    For the direct solution method.
+    Mobility problem.
+    Makes the stiffness matrix using closed surface singularity subtraction.
+    For constant potentials over quadratic elements.
     Parameters:
-        lin_pot_mesh: potential mesh
-        lin_geo_mesh: geometric mesh
-        u_d: disturbance velocity; (3 * N,) ndarray
-        f: force on particle; (3,) ndarray
-        l: torque on particle; (3,) ndarray
-        mu: fluid viscosity; scalar
+        cons_pot_mesh: constant potential mesh
+        quad_geo_mesh: quadratic geometric mesh
     Returns:
-        fv: forcing vector (3 * N,) ndarray
+        the stresslet matrix
     """
-    pot_nodes = lin_pot_mesh.get_nodes()
-    num_nodes = pot_nodes.shape[0]
+    pot_faces = cons_pot_mesh.get_faces()
+    assert pot_faces.shape[0] == quad_geo_mesh.get_faces().shape[0]
+    num_faces = pot_faces.shape[0]
+    K = np.zeros((3 * num_faces, 3 * num_faces))
+    add_cp_qe_DL_terms(K, cons_pot_mesh, quad_geo_mesh)
+    add_cp_qe_RBM_terms(K, cons_pot_mesh, quad_geo_mesh)
+    return K
 
-    x_c = lin_geo_mesh.get_centroid()
+
+def add_cp_qe_DL_terms(K, cons_pot_mesh, quad_geo_mesh):
+    """
+    Make DL terms for constant potential, quadratic elements mesh
+    $-\frac{1}{4\pi} \Int{q_j(\bm{x}) T_{jik}(\bm{x}, \bm{x}_0) n_k(\bm{x})}{S(\bm{x}), D, PV}$
+    Parameters:
+        K: stiffness matrix to add terms to (3 * face_num, 3 * face_num) ndarray
+        cons_pot_mesh: constant potential mesh
+        quad_geo_mesh : quadratic geometric mesh
+    Returns:
+        None
+    """
+    geo_faces = quad_geo_mesh.get_faces()
+    pot_faces = cons_pot_mesh.get_faces()
+    assert geo_faces.shape[0] == pot_faces.shape[0]
+    num_faces = geo_faces.shape[0]
     c_0 = 1. / (4. * np.pi)
+    K = np.zeros((3 * num_faces, 3 * num_faces))
+    for face_num in range(num_faces): # field points
+        face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
+        face_n = quad_geo_mesh.get_quad_n(face_num)
+        for src_num in range(num_faces): # source points
+            src_center = cons_pot_mesh.get_node(src_num)
+            if face_num != src_num:
+                sub_mat = gq.int_over_tri_quad_n(
+                    make_cp_qe_quad_func(src_center),
+                    face_nodes,
+                    face_n
+                )
+                K[(3 * src_num):(3 * src_num + 3),
+                  (3 * face_num):(3 * face_num + 3)] += sub_mat
+                K[(3 * src_num):(3 * src_num + 3),
+                  (3 * src_num):(3 * src_num + 3)] -= sub_mat
+            # do nothing face_num == src_num, how it works out for constant elements
 
-    # make Power and Miranda supplementary flow vector
-    f_s = f / (-8. * np.pi * mu) # the script F seen in Pozrikidis
-    l_s = l / (-8. * np.pi * mu) # the script L seen in Pozrikidis
-    v_s = np.empty(3 * num_nodes)
-    for src_num in range(num_nodes):
-        node = lin_pot_mesh.get_node(src_num)
-        v_s[(3 * src_num) : (3 * src_num + 3)] = np.einsum(
-            "il,l->i", geo.stokeslet(node, x_c), f_s
-        ) + np.einsum(
-            "il,l->i", geo.rotlet(node, x_c), l_s
+    for src_num in range(num_faces):
+        K[(3 * src_num):(3 * src_num + 3),
+          (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
+    K = np.dot(c_0, K)
+    return K
+
+
+def make_cp_qe_quad_func(x_0):
+    """"
+    Makes the constant potential function that is integrated over
+    quadratic elements for the stiffness matrix
+    Parameters:
+        x_0: the source point
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_quadratic(xi, eta, nodes)
+        return geo.stresslet(x, x_0)
+    return quad_func
+
+
+def add_cp_qe_RBM_terms(K, cons_pot_mesh, quad_geo_mesh):
+    """
+    Add rigid body motion terms to the given stiffness matrix K.
+    For constant potential and quadratic elements.
+    Parameters:
+        K: stiffness matrix to add terms to (3 * face_num, 3 * face_num) ndarray
+        cons_pot_mesh: constant potential mesh
+        quad_geo_mesh: quadratic geometric mesh
+    Returns:
+        None
+    """
+    num_faces = cons_pot_mesh.get_faces().shape[0]
+    x_c = quad_geo_mesh.get_centroid()
+    w = quad_geo_mesh.get_w()
+    A_m = quad_geo_mesh.get_A_m()
+    S_D = quad_geo_mesh.get_surface_area()
+
+    for face_num in range(num_faces):
+        face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
+        face_hs = quad_geo_mesh.get_hs(face_num)
+        def v_quad(_xi, _eta, _nodes):
+            return np.identity(3)
+        v_sub_mat = (1. / S_D) * gq.int_over_tri_quad(v_quad, face_nodes, face_hs)
+        def omega_quad(xi, eta, nodes):
+            pos = geo.pos_quadratic(xi, eta, nodes)
+            X = pos - x_c
+            return np.einsum("lrs,s->lr", geo.LC_3, X)
+        tmp_omega = gq.int_over_tri_quad(
+            omega_quad,
+            face_nodes,
+            face_hs,
         )
-    fv = c_0 * (u_d - v_s) # script C term from Pozrikidis
-    return fv
-
+        tmp_arr = []
+        for m in range(3):
+            tmp_arr.append((1./ A_m[m]) * np.outer(w[m], np.einsum("l,ls", w[m], tmp_omega)))
+        tmp_arr = np.array(tmp_arr)
+        tmp_omega_mat = np.sum(tmp_arr, axis=0)
+        for src_num in range(num_faces):
+            K[(3 * src_num):(3 * src_num + 3),
+              (3 * face_num):(3 * face_num + 3)] += v_sub_mat
+            src_center = cons_pot_mesh.get_node(src_num)
+            X_0 = src_center - x_c
+            omega_mat = np.einsum("ijk,js,k->is", geo.LC_3, tmp_omega_mat, X_0)
+            K[(3 * src_num):(3 * src_num + 3),
+              (3 * face_num):(3 * face_num + 3)] += omega_mat

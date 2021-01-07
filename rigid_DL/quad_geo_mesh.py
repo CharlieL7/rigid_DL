@@ -28,6 +28,12 @@ class Quad_Geo_Mesh(Geo_Mesh):
         self.quad_n = self.calc_all_quad_n()
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
+        self.mom_inertia = self.calc_moment_inertia_tensor()
+        (self.w, self.A_m) = self.calc_rotation_eig()
+        print("Surface area:")
+        print(self.surf_area)
+        print("Moment of inertia tensor:")
+        print(self.mom_inertia)
 
 
     def get_verts(self):
@@ -40,6 +46,24 @@ class Quad_Geo_Mesh(Geo_Mesh):
 
     def get_centroid(self):
         return self.centroid
+
+
+    def get_surface_area(self):
+        return self.surf_area
+
+
+    def get_w(self):
+        """
+        Return rotation vectors for rotation eigenfunction
+        """
+        return self.w
+
+
+    def get_A_m(self):
+        """
+        Return eigenvalues of moment of inertia tensor
+        """
+        return self.A_m
 
 
     def get_tri_nodes(self, face_num):
@@ -86,6 +110,13 @@ class Quad_Geo_Mesh(Geo_Mesh):
             quad_n: (3, 6) ndarray of normal vectors as columns
         """
         return self.quad_n[face_num]
+
+
+    def get_hs(self, face_num):
+        """
+        Returns (6,) ndarray of hs value at quadrature points
+        """
+        return self.quad_hs[face_num]
 
 
     def calc_all_quad_n(self):
@@ -150,6 +181,31 @@ class Quad_Geo_Mesh(Geo_Mesh):
         """
         x_c = np.mean(self.verts, axis=0)
         return x_c
+
+
+    def calc_moment_inertia_tensor(self):
+        """
+        Calculates the moment of inertia tensor
+        Uses element area weighting
+        """
+        inertia_tensor = np.zeros((3, 3))
+        for i, face in enumerate(self.faces):
+            nodes = self.get_tri_nodes(i)
+            inertia_tensor += gq.int_over_tri_quad(geo.inertia_func_quadratic, nodes, self.get_hs(i))
+        return inertia_tensor
+
+
+    def calc_rotation_eig(self):
+        """
+        Calculates the rotation vectors (eigenvectors of moment of inertia)
+        Be careful of sphere case when this basis is no longer orthogonal.
+        """
+        eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
+        idx = eig_vals.argsort()
+        eig_vals = eig_vals[idx]
+        eig_vecs = eig_vecs[:, idx]
+        w = eig_vecs.T
+        return (w, eig_vals)
 
 
     def normal_func(self, xi, eta, nodes):

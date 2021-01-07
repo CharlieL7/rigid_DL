@@ -47,10 +47,10 @@ E_d = np.array([
 ])
 E_c = np.zeros(3)
 """
-#E_d, E_c = eig_funs.E_12(dims)
-E_d, E_c = eig_funs.diag_eigvec("+", dims)
-#eigval = eig_vals.lambda_12(dims)
-eigval = eig_vals.lambda_pm("+", dims)
+E_d, E_c = eig_funs.E_12(dims)
+#E_d, E_c = eig_funs.diag_eigvec("+", dims)
+eigval = eig_vals.lambda_12(dims)
+#eigval = eig_vals.lambda_pm("+", dims)
 f = np.array([0., 0., 0.,]) # force
 l = np.array([0., 0., 0,]) # torque
 print("eigenvalue: {}".format(eigval))
@@ -86,7 +86,14 @@ print("cp_le Colinearity:")
 print(np.dot(tmp_0 / np.linalg.norm(tmp_0), tmp_1 / np.linalg.norm(tmp_1)))
 print("cp_le Total Relative L2 Error:")
 print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))
+print("Max Abs Error:")
+print(np.max(np.linalg.norm(np.reshape(tmp_1 - tmp_0, (num_nodes, 3)), axis=1)))
+#print("Abs Errors:")
+#print(np.linalg.norm(np.reshape(tmp_1 - tmp_0, (num_nodes, 3)), axis=1))
+#print("cp_le L2 Norm psi")
+#print(np.linalg.norm(tmp_0))
 
+"""
 # lp_le version
 pot_mesh = lin_pot_mesh.Lin_Pot_Mesh.make_from_lin_geo_mesh(geo_mesh)
 num_nodes = pot_mesh.get_nodes().shape[0]
@@ -119,3 +126,4 @@ print("lp_le Colinearity:")
 print(np.dot(tmp_0 / np.linalg.norm(tmp_0), tmp_1 / np.linalg.norm(tmp_1)))
 print("lp_le Total Relative L2 Error:")
 print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))
+"""

@@ -25,10 +25,19 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.normals = self.calc_all_n()
         self.hs = self.calc_all_hs()
         self.surf_area = self.calc_surf_area()
+        print("Surface area:")
+        print(self.surf_area)
         self.centroid = self.calc_mesh_centroid()
+        print("Center of mass:")
+        print(self.centroid)
         self.normalize_n() # normal vectors normalized
-        self.mom_inertia = self.calc_moment_inertia_tensor()
+        self.mom_inertia = self.calc_moment_inertia_tensor_alt()
+        print("Moment of inertia tensor:")
+        print(self.mom_inertia)
         self.dims = self.calc_ellip_dims()
+        self.volume = self.calc_volume()
+        print("Volume:")
+        print(self.volume)
         (self.w, self.A_m) = self.calc_rotation_eig()
 
 
@@ -176,6 +185,73 @@ class Lin_Geo_Mesh(Geo_Mesh):
         return inertia_tensor
 
 
+    def calc_moment_inertia_tensor_alt(self):
+        """
+        Calculates the moment of inertia tensor
+        Uses volume weighting.
+        """
+        M = np.zeros((3, 3))
+        _xx = 0.
+        _yy = 0.
+        _zz = 0.
+        _yx = 0.
+        _zx = 0.
+        _zy = 0.
+        _Cx = 0.
+        _Cy = 0.
+        _Cz = 0.
+        _m = 0.
+        for i, face in enumerate(self.faces):
+            nodes = self.get_tri_nodes(i)
+            (x1, y1, z1) = nodes[:,0]
+            (x2, y2, z2) = nodes[:,1]
+            (x3, y3, z3) = nodes[:,2]
+
+            v = x1*y2*z3 + y1*z2*x3 + x2*y3*z1 - (x3*y2*z1 + x2*y1*z3 + y3*z2*x1) # signed volume
+            _m += v
+
+            x4 = x1 + x2 + x3
+            y4 = y1 + y2 + y3
+            z4 = z1 + z2 + z3
+
+            _Cx += (v * x4)
+            _Cy += (v * y4)
+            _Cz += (v * z4)
+
+            _xx += v * (x1*x1 + x2*x2 + x3*x3 + x4*x4);
+            _yy += v * (y1*y1 + y2*y2 + y3*y3 + y4*y4);
+            _zz += v * (z1*z1 + z2*z2 + z3*z3 + z4*z4);
+            _yx += v * (y1*x1 + y2*x2 + y3*x3 + y4*x4);
+            _zx += v * (z1*x1 + z2*x2 + z3*x3 + z4*x4);
+            _zy += v * (z1*y1 + z2*y2 + z3*y3 + z4*y4);
+
+        # centroid
+        r = 1.0 / (4 * _m)
+        Cx = _Cx * r
+        Cy = _Cy * r
+        Cz = _Cz * r
+
+        # mass
+        m = _m / 6.
+        print("m:")
+        print(m)
+
+        r = 1.0 / 120
+        M[1,0] = M[0,1] = _yx * r - m * Cy * Cx
+        M[2,0] = M[0,2] = _zx * r - m * Cz * Cx
+        M[2,1] = M[1,2] = _zy * r - m * Cz * Cy
+
+        _xx = _xx * r - m * Cx * Cx
+        _yy = _yy * r - m * Cy * Cy
+        _zz = _zz * r - m * Cz * Cz
+
+        M[0,0] = _yy + _zz
+        M[1,1] = _zz + _xx
+        M[2,2] = _xx + _yy
+
+        return M
+
+
     def calc_rotation_eig(self):
         """
         Calculates the rotation vectors (eigenvectors of moment of inertia)
@@ -214,3 +290,17 @@ class Lin_Geo_Mesh(Geo_Mesh):
         b = (np.amax(x_rot[:, 1]) - np.amin(x_rot[:, 1])) / 2.
         c = (np.amax(x_rot[:, 2]) - np.amin(x_rot[:, 2])) / 2.
         return (a, b, c)
+
+
+    def calc_volume(self):
+        """
+        Calculate the ellipsoid volume using the signed volume of tetrahedron method
+        """
+        vol = 0.
+        for i, face in enumerate(self.faces):
+            xc = self.get_tri_center(i)
+            face_area = self.get_hs(i) * 0.5
+            face_normal = self.get_normal(i)
+            vol += np.dot(xc, face_normal) * face_area
+        vol /= 3.0
+        return vol

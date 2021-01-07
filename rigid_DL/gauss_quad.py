@@ -53,7 +53,7 @@ def int_over_tri_quad(func, nodes, hs):
         func: function to integrate, can return any order tensor
                expecting f(eta, xi, nodes)
         nodes: 3x6 ndarray with nodes as column vectors
-        hs: areas at the seven quadrature points (7,) ndarray
+        hs: areas at the six quadrature points (6,) ndarray
     Returns:
         integrated function
     """

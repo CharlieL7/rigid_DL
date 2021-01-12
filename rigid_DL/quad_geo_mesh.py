@@ -24,10 +24,13 @@ class Quad_Geo_Mesh(Geo_Mesh):
         """
         self.verts = np.array(x) # (Nv, 3) ndarray
         self.faces = np.array(f) # (Nf, 6) ndarray
-        self.centroid = self.calc_mesh_centroid_pc()
         self.quad_n = self.calc_all_quad_n()
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
+        self.centroid = self.calc_mesh_centroid()
+        print("Center of mass:")
+        print(self.centroid)
+        self.flip_n()
         self.mom_inertia = self.calc_moment_inertia_tensor()
         (self.w, self.A_m) = self.calc_rotation_eig()
         print("Surface area:")
@@ -128,8 +131,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         normals = np.empty([Nf, 3, 6])
         for i, face in enumerate(self.faces):
             nodes = self.get_tri_nodes(i)
-            tri_c = self.get_tri_center(i)
-            normals[i] = gq.quad_n(nodes, self.centroid, tri_c)
+            normals[i] = gq.quad_n(nodes)
         return normals
 
 
@@ -140,6 +142,24 @@ class Quad_Geo_Mesh(Geo_Mesh):
         """
         assert self.quad_n.any()
         return np.linalg.norm(self.quad_n, axis=1)
+
+
+    def flip_n(self):
+        """
+        Checks the orientation of the normals and reorients them to point
+        outwards from the mesh if required.
+        """
+        count = 0
+        for i, face in enumerate(self.faces):
+            x_c2tri = self.get_tri_center(i) - self.centroid
+            normals = self.quad_n[i]
+            for j in range(normals.shape[1]): #iterate over 6 normal vectors
+                n = normals[:, j]
+                if np.dot(n, x_c2tri) < 0.:
+                    count += 1
+                    self.quad_n[i][:,j] *= -1.
+        if count > 0:
+            print("flipped {} normal vectors".format(count))
 
 
     def calc_surf_area(self):

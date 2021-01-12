@@ -69,6 +69,11 @@ def main():
     }
     K = stiff_map[(pot_type, mesh_type)](pot_mesh, geo_mesh) # stiffness matrix
 
+    eig_vals, _eig_vecs = np.linalg.eig(K)
+    np.savetxt("{}_eig.txt".format(args.out_tag), np.sort(np.real(eig_vals)))
+
+    
+    """
     # Linear eigenfunctions
     E_d, E_c = eigfuns.E_12(geo_mesh, expected_dims)
     eigval_12 = eigvals.lambda_12(expected_dims)
@@ -82,6 +87,7 @@ def main():
     print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))
     np.savetxt("base_vec_12.csv", eig_vec * eigval_12, delimiter=",")
     np.savetxt("out_vec_12.csv", out_vec, delimiter=",")
+    """
 
 
 def lin_eigval_err(pot_mesh, C_ev):

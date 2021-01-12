@@ -76,10 +76,6 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
     x_c = lin_geo_mesh.get_centroid()
     w = lin_geo_mesh.get_w()
     A_m = lin_geo_mesh.get_A_m()
-    print("Original eigenvalue of M:")
-    print(A_m)
-    print("Other method:")
-    print(mobil_helper.calc_le_Am_vec(lin_geo_mesh))
     S_D = lin_geo_mesh.get_surface_area()
 
     for face_num in range(num_faces):
@@ -240,7 +236,7 @@ def make_cp_le_forcing_vec_SS(cons_pot_mesh, lin_geo_mesh, u_d, f, l, mu):
 
 def make_forcing_vec(pot_mesh, geo_mesh, u_d, f, l, mu):
     """
-    Makes the forcing vector ( f ) for the mobility problem 
+    Makes the forcing vector ( f ) for the mobility problem
     For the direct solution method.
     Parameters:
         pot_mesh: potential mesh
@@ -479,7 +475,6 @@ def add_cp_qe_DL_terms(K, cons_pot_mesh, quad_geo_mesh):
     assert geo_faces.shape[0] == pot_faces.shape[0]
     num_faces = geo_faces.shape[0]
     c_0 = 1. / (4. * np.pi)
-    K = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces): # field points
         face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
         face_n = quad_geo_mesh.get_quad_n(face_num)
@@ -500,8 +495,7 @@ def add_cp_qe_DL_terms(K, cons_pot_mesh, quad_geo_mesh):
     for src_num in range(num_faces):
         K[(3 * src_num):(3 * src_num + 3),
           (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
-    K = np.dot(c_0, K)
-    return K
+    K *= c_0
 
 
 def make_cp_qe_quad_func(x_0):
@@ -562,3 +556,182 @@ def add_cp_qe_RBM_terms(K, cons_pot_mesh, quad_geo_mesh):
             omega_mat = np.einsum("ijk,js,k->is", geo.LC_3, tmp_omega_mat, X_0)
             K[(3 * src_num):(3 * src_num + 3),
               (3 * face_num):(3 * face_num + 3)] += omega_mat
+
+
+def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
+    """
+    Mobility problem.
+    Makes the stiffness matrix using closed surface singularity subtraction.
+    For linear potentials over quadratic elements.
+    Parameters:
+        lin_pot_mesh: linear potential mesh
+        quad_geo_mesh: quadratic geometric mesh
+    Returns:
+        the stresslet matrix
+    """
+    num_nodes = lin_pot_mesh.get_nodes().shape[0]
+    K = np.zeros((3 * num_nodes, 3 * num_nodes))
+    add_lp_qe_DL_terms(K, lin_pot_mesh, quad_geo_mesh)
+    add_lp_qe_RBM_terms(K, lin_pot_mesh, quad_geo_mesh)
+    return K
+
+
+def add_lp_qe_DL_terms(K, lin_pot_mesh, quad_geo_mesh):
+    """
+    Make DL terms for linear potential, quadratic elements mesh
+    $-\frac{1}{4\pi} \Int{q_j(\bm{x}) T_{jik}(\bm{x}, \bm{x}_0) n_k(\bm{x})}{S(\bm{x}), D, PV}$
+    Parameters:
+        K: stiffness matrix to add terms to (3 * face_num, 3 * face_num) ndarray
+        lin_pot_mesh: linear potential mesh
+        quad_geo_mesh : quadratic geometric mesh
+    Returns:
+        None
+    """
+    geo_faces = quad_geo_mesh.get_faces()
+    pot_faces = lin_pot_mesh.get_faces()
+    assert geo_faces.shape[0] == pot_faces.shape[0]
+    num_faces = geo_faces.shape[0]
+    pot_nodes = lin_pot_mesh.get_nodes()
+    num_nodes = pot_nodes.shape[0]
+    c_0 = 1. / (4. * np.pi)
+
+    for face_num in range(num_faces): # integrate over faces
+        face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
+        face_n = quad_geo_mesh.quad_n[face_num]
+        for src_num in range(num_nodes): # source points
+            src_pt = lin_pot_mesh.get_node(src_num)
+            is_singular, local_singular_ind = lin_pot_mesh.check_in_face(src_num, face_num)
+
+            if is_singular: # singular triangle
+                for node_num in range(3):
+                    node_global_num = pot_faces[face_num, node_num] # global index for vert
+                    sub_mat = gq.int_over_tri_quad_n(
+                        make_sing_lp_qe_quad_func(
+                            src_pt, node_num, local_singular_ind
+                            ),
+                        face_nodes,
+                        face_n
+                    )
+                    K[(3 * src_num):(3 * src_num + 3),
+                      (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
+
+            else: # regular triangle
+                for node_num in range(3):
+                    node_global_num = pot_faces[face_num, node_num] # global index for vert
+                    sub_mat = gq.int_over_tri_quad_n(
+                        make_reg_lp_qe_quad_func(src_pt, node_num),
+                        face_nodes,
+                        face_n
+                    )
+                    K[(3 * src_num):(3 * src_num + 3),
+                      (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
+                # subtracting the q(x_0) term
+                sub_mat = gq.int_over_tri_quad_n(
+                    make_cp_qe_quad_func(src_pt),
+                    face_nodes,
+                    face_n
+                )
+                K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
+
+    for src_num in range(num_nodes): # source points
+        # whole surface q(x_0) term
+        K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= (
+            4. * np.pi * np.identity(3)
+        )
+
+    K *= c_0
+
+
+def make_reg_lp_qe_quad_func(x_0, node_num):
+    """
+    Makes the regular (non-singular) linear potential, quadratic element function
+    that is integrated for the stiffness matrix
+    Parameters:
+        x_0: source point
+        node_num: which potential shape function [0, 1, 2]
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_quadratic(xi, eta, nodes)
+        S = geo.stresslet(x, x_0)
+        phi = geo.shape_func_linear(xi, eta, node_num)
+        return phi * S
+    return quad_func
+
+
+def make_sing_lp_qe_quad_func(x_0, node_num, singular_ind):
+    """
+    Makes the sinuglar linear potential, quadratic element function
+    that is dotted with normal vectors and integrated for the stiffness matrix
+    Parameters:
+        x_0: source point
+        node_num: which potential shape function [0, 1, 2]
+        singular_ind: local singular index for a face
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.pos_quadratic(xi, eta, nodes)
+        phi = geo.shape_func_linear(xi, eta, node_num)
+        if node_num == singular_ind:
+            if (phi - 1) == 0: # getting around division by 0
+                return np.zeros([3, 3, 3])
+            else:
+                if np.linalg.norm(x - x_0) < 1e-6:
+                    print("nearly singular lp qe x_hat error")
+                return (phi - 1) * geo.stresslet(x, x_0)
+        else:
+            if phi == 0:
+                return np.zeros([3, 3, 3])
+            else:
+                if np.linalg.norm(x - x_0) < 1e-6:
+                    print("nearly singular lp qe x_hat error")
+                return (phi) * geo.stresslet(x, x_0)
+    return quad_func
+
+
+def add_lp_qe_RBM_terms(K, lin_pot_mesh, quad_geo_mesh):
+    """
+    Add rigid body motion terms to the given stiffness matrix K.
+    For linear potential and quadratic elements.
+    Parameters:
+        K: stiffness matrix to add terms to (3 * node_num, 3 * node_num) ndarray
+        lin_pot_mesh: constant potential mesh
+        quad_geo_mesh: quadratic geometric mesh
+    Returns:
+        None
+    """
+    pot_faces = lin_pot_mesh.get_faces()
+    num_faces = pot_faces.shape[0]
+    pot_nodes = lin_pot_mesh.get_nodes()
+    num_nodes = pot_nodes.shape[0]
+    S_D = quad_geo_mesh.get_surface_area()
+    x_c = quad_geo_mesh.get_centroid()
+    w = quad_geo_mesh.get_w()
+    A_m = quad_geo_mesh.get_A_m()
+
+    for face_num in range(num_faces):
+        face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
+        face_hs = quad_geo_mesh.get_hs(face_num)
+        for node_num in range(3): # face nodes
+            face_node_global_num = pot_faces[face_num, node_num]
+            v_sub_mat = (-4. * np.pi / S_D) * gq.int_over_tri_quad(
+                make_lp_le_v_quad(node_num),
+                face_nodes,
+                face_hs,
+            )
+            j = 3 * face_node_global_num
+            tmp_omega = gq.int_over_tri_quad(
+                make_lp_le_omega_quad(node_num, x_c),
+                face_nodes,
+                face_hs,
+            )
+            tmp_arr = []
+            for m in range(3):
+                tmp_arr.append((1./ A_m[m]) * np.outer(w[m], np.einsum("l, ls", w[m], tmp_omega)))
+            tmp_omega_mat = -4. * np.pi * np.sum(tmp_arr, axis=0)
+            for src_num in range(num_nodes):
+                K[(3 * src_num):(3 * src_num + 3),
+                  j:j+3] += -1. / (4. * np.pi) * v_sub_mat
+                src_pt = lin_pot_mesh.get_node(src_num)
+                X_0 = src_pt - x_c
+                omega_mat = np.einsum("ijk,js,k", geo.LC_3, tmp_omega_mat, X_0)
+                K[(3 * src_num):(3 * src_num + 3),
+                  j:j+3] += 1. / (4. * np.pi) * (omega_mat)

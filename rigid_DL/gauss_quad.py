@@ -87,11 +87,10 @@ def int_over_tri_quad_n(func, nodes, n):
     return ret
 
 
-def quad_n(nodes, xc, tri_c):
+def quad_n(nodes):
     """
     Calculate the normal vector values over a curved triangle for six point Gaussian quadrature.
     This function is use to reduce the number of times these values are recalculated.
-    Reorients the normal if needed.
 
     Parameters:
         nodes: 3x6 ndarray with nodes as column vectors
@@ -103,9 +102,6 @@ def quad_n(nodes, xc, tri_c):
         e_xi = np.einsum("ij,j->i", nodes, geo.dphi_dxi_quadratic(xi, eta, nodes))
         e_eta = np.einsum("ij,j->i", nodes, geo.dphi_deta_quadratic(xi, eta, nodes))
         n = np.cross(e_xi, e_eta)
-        if np.dot(n, tri_c - xc) < 0.:
-            print("n reori")
-            n = -n
         normals[:, i] = n
     return normals
 

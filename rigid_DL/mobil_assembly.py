@@ -265,7 +265,8 @@ def make_forcing_vec(pot_mesh, geo_mesh, u_d, f, l, mu):
         ) + np.einsum(
             "il,l->i", geo.rotlet(node, x_c), l_s
         )
-    fv = c_0 * (u_d - v_s) # script C term from Pozrikidis
+    fv = c_0 * (-u_d - v_s) # script C term from Pozrikidis
+    # sign error ?
     return fv
 
 

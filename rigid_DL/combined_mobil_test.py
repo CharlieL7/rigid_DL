@@ -158,8 +158,7 @@ def main():
             "mu": mu,
         },
     )
-    
-    """
+
     # Quadratic flows
     kappa_vec = RDL_eig_vals.calc_3x3_eval(dims)
     eigval_3x3 = -(1 + kappa_vec) / (kappa_vec -1)
@@ -176,7 +175,6 @@ def main():
             "mu": mu,
         },
     )
-    """
 
 
     # Write out to vtk file
@@ -191,11 +189,16 @@ def main():
             geo_mesh.get_verts(),
             cells,
             cell_data={
-                "loc_err_E12": [ret_E12["local_relative_L2_error"]],
-                "loc_err_E23": [ret_E23["local_relative_L2_error"]],
-                "loc_err_E31": [ret_E31["local_relative_L2_error"]],
-                "loc_err_Ep": [ret_Ep["local_relative_L2_error"]],
-                "loc_err_Em": [ret_Em["local_relative_L2_error"]],
+                "rel_err_E12": [ret_E12["local_relative_L2_error"]],
+                "rel_err_E23": [ret_E23["local_relative_L2_error"]],
+                "rel_err_E31": [ret_E31["local_relative_L2_error"]],
+                "rel_err_Ep": [ret_Ep["local_relative_L2_error"]],
+                "rel_err_Em": [ret_Em["local_relative_L2_error"]],
+                "abs_err_E12": [ret_E12["local_absolute_L2_error"]],
+                "abs_err_E23": [ret_E23["local_absolute_L2_error"]],
+                "abs_err_E31": [ret_E31["local_absolute_L2_error"]],
+                "abs_err_Ep": [ret_Ep["local_absolute_L2_error"]],
+                "abs_err_Em": [ret_Em["local_absolute_L2_error"]],
             },
         )
     elif pot_type == Pot_Type.LINEAR:
@@ -205,11 +208,16 @@ def main():
             pot_mesh.get_nodes(),
             cells,
             point_data={
-                "loc_err_E12": ret_E12["local_relative_L2_error"],
-                "loc_err_E23": ret_E23["local_relative_L2_error"],
-                "loc_err_E31": ret_E31["local_relative_L2_error"],
-                "loc_err_Ep": ret_Ep["local_relative_L2_error"],
-                "loc_err_Em": ret_Em["local_relative_L2_error"],
+                "rel_err_E12": ret_E12["local_relative_L2_error"],
+                "rel_err_E23": ret_E23["local_relative_L2_error"],
+                "rel_err_E31": ret_E31["local_relative_L2_error"],
+                "rel_err_Ep": ret_Ep["local_relative_L2_error"],
+                "rel_err_Em": ret_Em["local_relative_L2_error"],
+                "abs_err_E12": ret_E12["local_absolute_L2_error"],
+                "abs_err_E23": ret_E23["local_absolute_L2_error"],
+                "abs_err_E31": ret_E31["local_absolute_L2_error"],
+                "abs_err_Ep": ret_Ep["local_absolute_L2_error"],
+                "abs_err_Em": ret_Em["local_absolute_L2_error"],
             },
         )
     meshio.write("{}_out.vtk".format(args.out_tag), mesh_io, file_format="vtk")
@@ -218,17 +226,32 @@ def main():
     out_file = "{}_data.txt".format(args.out_tag)
     with open(out_file, 'w') as out:
         csv_writer = csv.writer(out, delimiter=',')
-        out.write("trans_vel, rot_vel, collinearity, tot_rel_err, eigenvalue\n")
-        csv_writer.writerow([ret_E12["trans_velocity"], ret_E12["rot_velocity"], ret_E12["collinearity"], ret_E12["total_relative_L2_error"], eigval_12])
-        csv_writer.writerow([ret_E23["trans_velocity"], ret_E23["rot_velocity"], ret_E23["collinearity"], ret_E23["total_relative_L2_error"], eigval_23])
-        csv_writer.writerow([ret_E31["trans_velocity"], ret_E31["rot_velocity"], ret_E31["collinearity"], ret_E31["total_relative_L2_error"], eigval_31])
-        csv_writer.writerow([ret_Ep["trans_velocity"], ret_Ep["rot_velocity"], ret_Ep["collinearity"], ret_Ep["total_relative_L2_error"], eigval_p])
-        csv_writer.writerow([ret_Em["trans_velocity"], ret_Em["rot_velocity"], ret_Em["collinearity"], ret_Em["total_relative_L2_error"], eigval_m])
-        """
-        csv_writer.writerow([ret_3x3["trans_velocity"][0], ret_3x3["rot_velocity"][0], ret_3x3["collinearity"][0], ret_3x3["total_relative_L2_error"][0], eigval_3x3[0]])
-        csv_writer.writerow([ret_3x3["trans_velocity"][1], ret_3x3["rot_velocity"][1], ret_3x3["collinearity"][1], ret_3x3["total_relative_L2_error"][1], eigval_3x3[1]])
-        csv_writer.writerow([ret_3x3["trans_velocity"][2], ret_3x3["rot_velocity"][2], ret_3x3["collinearity"][2], ret_3x3["total_relative_L2_error"][2], eigval_3x3[2]])
-        """
+        out.write("trans_vel, rot_vel, collinearity, tot_abs_err, tot_rel_err, eigenvalue\n")
+        csv_writer.writerow([ret_E12["trans_velocity"], ret_E12["rot_velocity"],
+            ret_E12["collinearity"], ret_E12["total_absolute_L2_error"],
+            ret_E12["total_relative_L2_error"], eigval_12])
+        csv_writer.writerow([ret_E23["trans_velocity"], ret_E23["rot_velocity"],
+            ret_E23["collinearity"], ret_E23["total_absolute_L2_error"],
+            ret_E23["total_relative_L2_error"], eigval_23])
+        csv_writer.writerow([ret_E31["trans_velocity"], ret_E31["rot_velocity"],
+            ret_E31["collinearity"], ret_E31["total_absolute_L2_error"],
+            ret_E31["total_relative_L2_error"], eigval_31])
+        csv_writer.writerow([ret_Ep["trans_velocity"], ret_Ep["rot_velocity"],
+            ret_Ep["collinearity"], ret_Ep["total_absolute_L2_error"],
+            ret_Ep["total_relative_L2_error"], eigval_p])
+        csv_writer.writerow([ret_Em["trans_velocity"], ret_Em["rot_velocity"],
+            ret_Em["collinearity"], ret_Em["total_absolute_L2_error"],
+            ret_Em["total_relative_L2_error"], eigval_m])
+
+        csv_writer.writerow([ret_3x3["trans_velocity"][0], ret_3x3["rot_velocity"][0],
+            ret_3x3["collinearity"][0], ret_3x3["total_absolute_L2_error"][0],
+            ret_3x3["total_relative_L2_error"][0], eigval_3x3[0]])
+        csv_writer.writerow([ret_3x3["trans_velocity"][1], ret_3x3["rot_velocity"][1],
+            ret_3x3["collinearity"][1], ret_3x3["total_absolute_L2_error"][1],
+            ret_3x3["total_relative_L2_error"][1], eigval_3x3[1]])
+        csv_writer.writerow([ret_3x3["trans_velocity"][2], ret_3x3["rot_velocity"][2],
+            ret_3x3["collinearity"][2], ret_3x3["total_absolute_L2_error"][2],
+            ret_3x3["total_relative_L2_error"][2], eigval_3x3[2]])
 
 
 
@@ -261,9 +284,11 @@ def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
     q = np.linalg.solve(K + np.identity(3*num_nodes), (eigval + 1) * psi) # (3N,)
     diff = q - psi
     base = np.linalg.norm(np.reshape(psi, (num_nodes, 3)), axis=1)
-    loc_err = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
-    #loc_err = np.divide(loc_err, base, out=np.zeros_like(loc_err), where=(base > tol))
-    tot_err = np.linalg.norm(diff) / np.linalg.norm(psi)
+    loc_abs_err = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
+    #loc_rel_err = np.divide(loc_abs_err, base, out=np.zeros_like(loc_abs_err), where=(base > tol))
+    loc_rel_err = loc_abs_err / np.mean(base)
+    tot_abs_err = np.linalg.norm(diff)
+    tot_rel_err = np.linalg.norm(diff) / np.linalg.norm(psi)
     collin = np.dot(q / np.linalg.norm(q), psi / np.linalg.norm(psi))
     if isinstance(pot_mesh, cons_pot_mesh.Cons_Pot_Mesh):
         if isinstance(geo_mesh, lin_geo_mesh.Lin_Geo_Mesh):
@@ -281,8 +306,10 @@ def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
             rot_v = (RDL_mobil_helper.calc_lp_qe_rot_vel(pot_mesh, geo_mesh, q))
 
     ret = {
-        "local_relative_L2_error": loc_err,
-        "total_relative_L2_error": tot_err,
+        "local_relative_L2_error": loc_rel_err,
+        "local_absolute_L2_error": loc_abs_err,
+        "total_relative_L2_error": tot_rel_err,
+        "total_absolute_L2_error": tot_abs_err,
         "collinearity": collin,
         "trans_velocity": trans_v,
         "rot_velocity": rot_v,
@@ -315,8 +342,9 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
     mu = K_ev["mu"]
     num_nodes = pot_mesh.get_nodes().shape[0]
     u_d_3x3 = RDL_eig_helper.make_quad_eig_vels(pot_mesh, dims, kappa_vec) # (N, 3)
-    loc_err = []
-    tot_err = []
+    loc_rel_err = []
+    tot_rel_err = []
+    tot_abs_err = []
     collin = []
     trans_v = []
     rot_v = []
@@ -325,10 +353,11 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
         q = np.linalg.solve(K + np.identity(3*num_nodes), (eigval_3x3[i] + 1) * psi) # (3N,)
         diff = q - psi
         base = np.linalg.norm(np.reshape(psi, (num_nodes, 3)), axis=1)
-        tmp_0 = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
-        #loc_err.append(np.divide(tmp_0, base, out=np.zeros_like(tmp_0), where=(base > tol)))
-        loc_err.append(tmp_0)
-        tot_err.append(np.linalg.norm(diff) / np.linalg.norm(psi))
+        loc_abs_err = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
+        #loc_rel_err.append(np.divide(tmp_0, base, out=np.zeros_like(tmp_0), where=(base > tol)))
+        loc_rel_err = loc_abs_err / np.mean(base)
+        tot_abs_err.append(np.linalg.norm(diff))
+        tot_rel_err.append(np.linalg.norm(diff) / np.linalg.norm(psi))
         collin.append(np.dot(q / np.linalg.norm(q), psi / np.linalg.norm(psi)))
         if isinstance(pot_mesh, cons_pot_mesh.Cons_Pot_Mesh):
             if isinstance(geo_mesh, lin_geo_mesh.Lin_Geo_Mesh):
@@ -346,8 +375,10 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
                 rot_v.append(RDL_mobil_helper.calc_lp_qe_rot_vel(pot_mesh, geo_mesh, q))
 
     ret = {
-        "local_relative_L2_error": loc_err,
-        "total_relative_L2_error": tot_err,
+        "local_relative_L2_error": loc_rel_err,
+        "local_absolute_L2_error": loc_abs_err,
+        "total_relative_L2_error": tot_rel_err,
+        "total_absolute_L2_error": tot_abs_err,
         "collinearity": collin,
         "trans_velocity": trans_v,
         "rot_velocity": rot_v,

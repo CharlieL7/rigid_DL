@@ -78,18 +78,29 @@ def main():
     #eig_vals, _eig_vecs = np.linalg.eig(K)
     #np.savetxt("{}_eig.txt".format(args.out_tag), np.sort(np.real(eig_vals)))
 
+    """
     E_d = np.array(
         [
             [0., 1., 0.,],
-            [-1., 0., 0.,],
+            [0., 0., 0.,],
             [0., 0., 0.,]
         ]
     )
     E_c = np.zeros(3)
-    u_d = RDL_eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c) # (N, 3)
+    """
+    E_d, E_c = RDL_eig_funs.E_12(dims)
+    #E_c = np.zeros(3)
+
+    pot_nodes = pot_mesh.get_nodes()
+    num_nodes = pot_nodes.shape[0]
+    u_d = np.zeros((num_nodes, 3))
+    for m in range(num_nodes):
+        node = pot_nodes[m]
+        x_proj = np.array([node[0], 0., 0.])
+        u_d[m] = E_d @ node - np.cross(E_c, node)
+
     f_vec = m_a.make_forcing_vec(pot_mesh, geo_mesh, np.ravel(u_d), f, l, mu) # eigenvector (3N,)
     q = np.linalg.solve(K + np.identity(3*num_nodes), f_vec) # (3N,)
-
 
     if isinstance(pot_mesh, cons_pot_mesh.Cons_Pot_Mesh):
         if isinstance(geo_mesh, lin_geo_mesh.Lin_Geo_Mesh):
@@ -107,11 +118,11 @@ def main():
             rot_v = (RDL_mobil_helper.calc_lp_qe_rot_vel(pot_mesh, geo_mesh, q))
 
     print("translational velocity:")
-    print(trans_v)
+    print(trans_v.tolist())
 
     print("rotational velocity:")
-    print(rot_v)
-    
+    print(rot_v.tolist())
+
 
 def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
     """

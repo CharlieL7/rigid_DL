@@ -28,11 +28,12 @@ class Quad_Geo_Mesh(Geo_Mesh):
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
         self.centroid = self.calc_mesh_centroid()
+        self.center_mesh();
         print("Center of mass:")
         print(self.centroid)
         self.flip_n()
         self.mom_inertia = self.calc_moment_inertia_tensor()
-        (self.w, self.A_m) = self.calc_rotation_eig()
+        (self.w, self.A_m) = self.calc_rotation_eig() #w is 3 ROWS of eigenvectors
         print("Surface area:")
         print(self.surf_area)
         print("Moment of inertia tensor:")
@@ -193,6 +194,14 @@ class Quad_Geo_Mesh(Geo_Mesh):
             x_c += gq.int_over_tri_quad(geo.pos_quadratic, nodes, self.quad_hs[i])
         x_c /= self.surf_area
         return x_c
+    
+
+    def center_mesh(self):
+        """
+        Center the mesh so the centroid is at the origin
+        """
+        self.verts -= self.centroid
+        self.centroid = self.calc_mesh_centroid()
 
 
     def calc_mesh_centroid_pc(self):

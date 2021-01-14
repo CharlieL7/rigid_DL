@@ -39,8 +39,10 @@ def calc_cp_le_rot_vel(lin_geo_mesh, q):
         omega_vec: particle rotational velocity; (3,) ndarray
     """
     num_faces = lin_geo_mesh.get_faces().shape[0]
+    q_res = np.reshape(q, (num_faces, 3))
     x_c = lin_geo_mesh.get_centroid()
     w = lin_geo_mesh.get_w()
+    w = np.identity(3)
     A_m = lin_geo_mesh.get_A_m()
     omega_vec = 0.
     for face_num in range(num_faces):
@@ -52,15 +54,15 @@ def calc_cp_le_rot_vel(lin_geo_mesh, q):
                 X = pos - x_c
                 return np.cross(X, q_vec)
             return omega_quad
-        j = 3 * face_num
         tmp_omega = gq.int_over_tri_lin(
-            make_omega_quad(q[j : j+3]),
+            make_omega_quad(q_res[face_num]),
             face_nodes,
             face_hs,
         )
         tmp_arr = []
         for m in range(3):
             tmp_arr.append((1./ A_m[m]) * w[m] * np.dot(w[m], tmp_omega))
+        tmp_arr = np.array(tmp_arr)
         omega_vec += -4. * np.pi * np.sum(tmp_arr, axis=0)
     return omega_vec
 

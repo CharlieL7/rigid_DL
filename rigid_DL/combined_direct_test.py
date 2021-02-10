@@ -2,7 +2,6 @@
 Mesh eigenvector tests
 """
 import argparse as argp
-from enum import Enum
 import numpy as np
 import meshio
 from rigid_DL import lin_geo_mesh, quad_geo_mesh, cons_pot_mesh, lin_pot_mesh
@@ -11,6 +10,7 @@ import rigid_DL.eigenfunctions as eigfuns
 import rigid_DL.eigenvalues as eigvals
 import rigid_DL.gauss_quad as gq
 import rigid_DL.eigfun_helper as eig_helper
+from rigid_DL.enums import Mesh_Type, Pot_Type
 
 
 def main():
@@ -283,16 +283,6 @@ def calc_avg_v_in_norm(mesh, mesh_type, E_d, E_c):
             )
     avg_v_in_norm /= mesh.surf_area
     return avg_v_in_norm
-
-
-class Mesh_Type(Enum):
-    LINEAR = 1
-    QUADRATIC = 2
-
-
-class Pot_Type(Enum):
-    CONSTANT = 0
-    LINEAR = 1
 
 if __name__ == "__main__":
     main()

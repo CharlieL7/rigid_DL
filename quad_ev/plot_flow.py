@@ -1,14 +1,13 @@
 import numpy as np
 import pyvista as pv
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 H = np.array([
-    [0.858951922673698],
-    [0.362078440766057],
-    [0.362078440766057]
+[ 0.               ],
+ [-0.707106781186547],
+ [ 0.707106781186548],
 ])
 
-"""
 fig = plt.figure()
 ax = fig.gca(projection="3d")
 
@@ -22,6 +21,7 @@ v = H[1] * x * z
 w = H[2] * x * y
 
 ax.quiver(x, y, z, u, v, w, length=0.2)
+plt.show()
 """
 
 nx = 10
@@ -45,3 +45,4 @@ stream, src = mesh.streamlines('vectors', return_source=True,
                                source_radius=0.1)
 cpos = [(1.2, 1.2, 1.2), (-0.0, -0.0, -0.0), (0.0, 0.0, 1.0)]
 stream.tube(radius=0.0015).plot(cpos=cpos)
+"""

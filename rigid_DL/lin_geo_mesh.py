@@ -185,6 +185,21 @@ class Lin_Geo_Mesh(Geo_Mesh):
         return inertia_tensor
 
 
+    def fix_mom_inertia(self):
+        """
+        Hardcodes the moment of inertia tensor
+        """
+        self.mom_inertia[0,0] = 29.907607984
+        self.mom_inertia[0,1] = 0.
+        self.mom_inertia[0,2] = 0.
+        self.mom_inertia[1,0] = 0.
+        self.mom_inertia[1,1] = 184.392115678
+        self.mom_inertia[1,2] = 0.
+        self.mom_inertia[2,0] = 0.
+        self.mom_inertia[2,1] = 0.
+        self.mom_inertia[2,2] = 184.392115678
+
+
     def calc_moment_inertia_tensor_alt(self):
         """
         Calculates the moment of inertia tensor
@@ -258,9 +273,11 @@ class Lin_Geo_Mesh(Geo_Mesh):
         Be careful of sphere case when this basis is no longer orthogonal.
         """
         eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
+        """
         idx = eig_vals.argsort()
         eig_vals = eig_vals[idx]
         eig_vecs = eig_vecs[:, idx]
+        """
         w = eig_vecs.T
         return (w, eig_vals)
 

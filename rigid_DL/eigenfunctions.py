@@ -139,4 +139,9 @@ def calc_3x3_evec(dims, kappa):
 
     D = B @ C_inv
     H = null_space(D)
+
+    if H.size == 0:
+        print("Error: empty quadratic flow vector H^(1), returning zero vector")
+        return np.zeros((3, 1))
+
     return H

@@ -2,7 +2,6 @@
 Mesh eigenvector tests
 """
 import argparse as argp
-from enum import Enum
 import numpy as np
 import meshio
 import csv
@@ -12,6 +11,7 @@ import rigid_DL.eigenfunctions as eigfuns
 import rigid_DL.eigenvalues as eigvals
 import rigid_DL.gauss_quad as gq
 import rigid_DL.eigfun_helper as eig_helper
+from rigid_DL.enums import Mesh_Type, Pot_Type
 
 
 def main():
@@ -73,21 +73,26 @@ def main():
     np.savetxt("{}_eig.txt".format(args.out_tag), np.sort(np.real(eig_vals)))
 
     
-    """
     # Linear eigenfunctions
-    E_d, E_c = eigfuns.E_12(geo_mesh, expected_dims)
+    num_nodes = pot_mesh.get_nodes().shape[0]
+    E_d, E_c = eigfuns.E_12(expected_dims)
     eigval_12 = eigvals.lambda_12(expected_dims)
     eig_vec = eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
-    out_vec = np.reshape(K @ eig_vec.flatten("C"), eig_vec.shape, order="C")
-    tmp_0 = np.ravel(eigval_12 * eig_vec)
+    tmp = np.zeros((num_nodes, 3))
+    tmp[:, 0] = 1.
+    c_0 = (1. / (4. * np.pi))
+    u_d = c_0 * 0.5 * (-1. * tmp + eigval_12 * eig_vec)
+    out_vec = np.reshape(K @ np.ravel(u_d), eig_vec.shape, order="C")
+
+    tmp_0 = np.ravel(0.5 * c_0 * (tmp + eig_vec))
     tmp_1 = np.ravel(out_vec)
-    print("Colinearlity:")
-    print(np.dot(tmp_0 / np.linalg.norm(tmp_0), tmp_1 / np.linalg.norm(tmp_1)))
-    print("Whole Relative L2 Error:")
-    print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))
-    np.savetxt("base_vec_12.csv", eig_vec * eigval_12, delimiter=",")
-    np.savetxt("out_vec_12.csv", out_vec, delimiter=",")
-    """
+
+    #print("Colinearlity:")
+    #print(np.dot(tmp_0 / np.linalg.norm(tmp_0), tmp_1 / np.linalg.norm(tmp_1)))
+    #print("Whole Relative L2 Error:")
+    #print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))
+    #np.savetxt("base_vec_12.csv", eig_vec * eigval_12, delimiter=",")
+    #np.savetxt("out_vec_12.csv", out_vec, delimiter=",")
 
 
 def lin_eigval_err(pot_mesh, C_ev):
@@ -112,8 +117,6 @@ def lin_eigval_err(pot_mesh, C_ev):
     g = np.dot((lambda_mat - C), v_in.flatten("C"))
     g = g.reshape(v_in.shape, order="C")
     err_arr = np.linalg.norm(g, axis=1)
-    base = eigval * v_in
-    base = np.linalg.norm(base, axis=1)
     # only divides when base is > than tol, otherwise sets to zero
     per_err_arr = np.divide(err_arr, base, out=np.zeros_like(err_arr), where=base>tol)
     return (err_arr, v_in, per_err_arr)

@@ -3,7 +3,6 @@ Testing the stiffness matrix assembly for the mobility problem
 """
 import sys
 import csv
-from enum import Enum
 import argparse as argp
 import numpy as np
 import meshio
@@ -13,6 +12,7 @@ import rigid_DL.eigfun_helper as RDL_eig_helper
 import rigid_DL.mobil_helper as RDL_mobil_helper
 import rigid_DL.eigenfunctions as RDL_eig_funs
 import rigid_DL.eigenvalues as RDL_eig_vals
+from rigid_DL.enums import Mesh_Type, Pot_Type
 
 def main():
     parser = argp.ArgumentParser(description="Testing the mobility problem for set of linear and quadratic flows")
@@ -89,17 +89,22 @@ def main():
     E_c = np.zeros(3)
     """
     E_d, E_c = RDL_eig_funs.E_12(dims)
-    #E_c = np.zeros(3)
+    eigval_12 = RDL_eig_vals.lambda_12(dims)
 
     pot_nodes = pot_mesh.get_nodes()
     num_nodes = pot_nodes.shape[0]
     u_d = np.zeros((num_nodes, 3))
     for m in range(num_nodes):
         node = pot_nodes[m]
-        x_proj = np.array([node[0], 0., 0.])
-        u_d[m] = E_d @ node - np.cross(E_c, node)
+        xx = node - geo_mesh.get_centroid()
+        u_d[m] = E_d @ xx - np.cross(E_c, xx)
 
-    f_vec = m_a.make_forcing_vec(pot_mesh, geo_mesh, np.ravel(u_d), f, l, mu) # eigenvector (3N,)
+    # half translation, half E12
+    tmp = np.zeros((num_nodes, 3))
+    tmp[:, 0] = 1.
+    
+    c_0 = (1. / (4. * np.pi))
+    f_vec = c_0 * -1 * (1. + eigval_12) * np.ravel(u_d)
     q = np.linalg.solve(K + np.identity(3*num_nodes), f_vec) # (3N,)
 
     if isinstance(pot_mesh, cons_pot_mesh.Cons_Pot_Mesh):
@@ -122,6 +127,17 @@ def main():
 
     print("rotational velocity:")
     print(rot_v.tolist())
+
+    psi = c_0 * -1 * (u_d)
+    print("q:")
+    print(np.reshape(q, (num_nodes, 3)))
+    print("psi:")
+    print(psi)
+    """
+    tot_rel_err = np.linalg.norm(diff) / np.linalg.norm(psi)
+    print("total relative error:")
+    print(tot_rel_err)
+    """
 
 
 def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
@@ -245,17 +261,6 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
         "rot_velocity": rot_v,
     }
     return ret
-
-
-class Mesh_Type(Enum):
-    LINEAR = 1
-    QUADRATIC = 2
-
-
-class Pot_Type(Enum):
-    CONSTANT = 0
-    LINEAR = 1
-
 
 if __name__ == "__main__":
     main()

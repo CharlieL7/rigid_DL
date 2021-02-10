@@ -63,7 +63,7 @@ def calc_3x3_eval(dims):
 
 def main():
     np.set_printoptions(precision=15)
-    dims = [2, 1, 1]
+    dims = [4, 1, 1]
     kappa_vec = calc_3x3_eval(dims)
     evecs = []
     for kappa in kappa_vec:

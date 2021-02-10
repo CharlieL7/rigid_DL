@@ -1,9 +1,7 @@
 """
 Testing the stiffness matrix assembly for the mobility problem
 """
-import sys
 import csv
-from enum import Enum
 import argparse as argp
 import numpy as np
 import meshio
@@ -13,6 +11,7 @@ import rigid_DL.eigfun_helper as RDL_eig_helper
 import rigid_DL.mobil_helper as RDL_mobil_helper
 import rigid_DL.eigenfunctions as RDL_eig_funs
 import rigid_DL.eigenvalues as RDL_eig_vals
+from rigid_DL.enums import Mesh_Type, Pot_Type
 
 def main():
     parser = argp.ArgumentParser(description="Testing the mobility problem for set of linear and quadratic flows")
@@ -199,6 +198,14 @@ def main():
                 "abs_err_E31": [ret_E31["local_absolute_L2_error"]],
                 "abs_err_Ep": [ret_Ep["local_absolute_L2_error"]],
                 "abs_err_Em": [ret_Em["local_absolute_L2_error"]],
+                "collin_E12": [ret_E12["local_collinearity"]],
+                "collin_E23": [ret_E23["local_collinearity"]],
+                "collin_E31": [ret_E31["local_collinearity"]],
+                "collin_Ep": [ret_Ep["local_collinearity"]],
+                "collin_Em": [ret_Em["local_collinearity"]],
+                "abs_err_3x3_0": [ret_3x3["local_absolute_L2_error"][0]],
+                "abs_err_3x3_1": [ret_3x3["local_absolute_L2_error"][1]],
+                "abs_err_3x3_2": [ret_3x3["local_absolute_L2_error"][2]],
             },
         )
     elif pot_type == Pot_Type.LINEAR:
@@ -218,6 +225,14 @@ def main():
                 "abs_err_E31": ret_E31["local_absolute_L2_error"],
                 "abs_err_Ep": ret_Ep["local_absolute_L2_error"],
                 "abs_err_Em": ret_Em["local_absolute_L2_error"],
+                "collin_E12": ret_E12["local_collinearity"],
+                "collin_E23": ret_E23["local_collinearity"],
+                "collin_E31": ret_E31["local_collinearity"],
+                "collin_Ep": ret_Ep["local_collinearity"],
+                "collin_Em": ret_Em["local_collinearity"],
+                "abs_err_3x3_0": ret_3x3["local_absolute_L2_error"][0],
+                "abs_err_3x3_1": ret_3x3["local_absolute_L2_error"][1],
+                "abs_err_3x3_2": ret_3x3["local_absolute_L2_error"][2],
             },
         )
     meshio.write("{}_out.vtk".format(args.out_tag), mesh_io, file_format="vtk")
@@ -226,33 +241,45 @@ def main():
     out_file = "{}_data.txt".format(args.out_tag)
     with open(out_file, 'w') as out:
         csv_writer = csv.writer(out, delimiter=',')
-        out.write("trans_vel, rot_vel, collinearity, tot_abs_err, tot_rel_err, eigenvalue\n")
-        csv_writer.writerow([ret_E12["trans_velocity"], ret_E12["rot_velocity"],
-            ret_E12["collinearity"], ret_E12["total_absolute_L2_error"],
-            ret_E12["total_relative_L2_error"], eigval_12])
-        csv_writer.writerow([ret_E23["trans_velocity"], ret_E23["rot_velocity"],
-            ret_E23["collinearity"], ret_E23["total_absolute_L2_error"],
-            ret_E23["total_relative_L2_error"], eigval_23])
-        csv_writer.writerow([ret_E31["trans_velocity"], ret_E31["rot_velocity"],
-            ret_E31["collinearity"], ret_E31["total_absolute_L2_error"],
-            ret_E31["total_relative_L2_error"], eigval_31])
-        csv_writer.writerow([ret_Ep["trans_velocity"], ret_Ep["rot_velocity"],
-            ret_Ep["collinearity"], ret_Ep["total_absolute_L2_error"],
-            ret_Ep["total_relative_L2_error"], eigval_p])
-        csv_writer.writerow([ret_Em["trans_velocity"], ret_Em["rot_velocity"],
-            ret_Em["collinearity"], ret_Em["total_absolute_L2_error"],
-            ret_Em["total_relative_L2_error"], eigval_m])
-
-        csv_writer.writerow([ret_3x3["trans_velocity"][0], ret_3x3["rot_velocity"][0],
-            ret_3x3["collinearity"][0], ret_3x3["total_absolute_L2_error"][0],
-            ret_3x3["total_relative_L2_error"][0], eigval_3x3[0]])
-        csv_writer.writerow([ret_3x3["trans_velocity"][1], ret_3x3["rot_velocity"][1],
-            ret_3x3["collinearity"][1], ret_3x3["total_absolute_L2_error"][1],
-            ret_3x3["total_relative_L2_error"][1], eigval_3x3[1]])
-        csv_writer.writerow([ret_3x3["trans_velocity"][2], ret_3x3["rot_velocity"][2],
-            ret_3x3["collinearity"][2], ret_3x3["total_absolute_L2_error"][2],
-            ret_3x3["total_relative_L2_error"][2], eigval_3x3[2]])
-
+        out.write(
+            "eigenvalue,"
+            "trans_vel,"
+            "rot_vel,"
+            "collinearity,"
+            "tot_abs_err,"
+            "tot_rel_err,"
+            "avg_abs_err,"
+            "med_abs_err,"
+            "max_abs_err,"
+            "min_abs_err\n"
+        )
+        ret_list = [ret_E12, ret_E23, ret_E31, ret_Ep, ret_Em]
+        for ret in ret_list:
+            csv_writer.writerow([
+                ret["eigenvalue"],
+                ret["trans_velocity"],
+                ret["rot_velocity"],
+                ret["collinearity"],
+                ret["total_absolute_L2_error"],
+                ret["total_relative_L2_error"],
+                ret["avg_absolute_L2_error"],
+                ret["med_absolute_L2_error"],
+                ret["max_absolute_L2_error"],
+                ret["min_absolute_L2_error"],
+            ])
+        for i in range(3):
+            csv_writer.writerow([
+                ret_3x3["eigenvalue"][i],
+                ret_3x3["trans_velocity"][i],
+                ret_3x3["rot_velocity"][i],
+                ret_3x3["collinearity"][i],
+                ret_3x3["total_absolute_L2_error"][i],
+                ret_3x3["total_relative_L2_error"][i],
+                ret_3x3["avg_absolute_L2_error"][i],
+                ret_3x3["med_absolute_L2_error"][i],
+                ret_3x3["max_absolute_L2_error"][i],
+                ret_3x3["min_absolute_L2_error"][i],
+            ])
 
 
 def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
@@ -285,11 +312,31 @@ def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
     diff = q - psi
     base = np.linalg.norm(np.reshape(psi, (num_nodes, 3)), axis=1)
     loc_abs_err = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
-    #loc_rel_err = np.divide(loc_abs_err, base, out=np.zeros_like(loc_abs_err), where=(base > tol))
-    loc_rel_err = loc_abs_err / np.mean(base)
+
+    print("Average L2 psi")
+    print(np.mean(np.linalg.norm(np.reshape(psi, (num_nodes, 3)))))
+
+    # Problably a poor error measure
+    loc_rel_err = np.divide(loc_abs_err, base, out=np.zeros_like(loc_abs_err), where=(base > tol))
+
     tot_abs_err = np.linalg.norm(diff)
-    tot_rel_err = np.linalg.norm(diff) / np.linalg.norm(psi)
+    tot_rel_err = np.linalg.norm(diff) / np.linalg.norm(base)
+
+    avg_abs_err = np.mean(loc_abs_err)
+    med_abs_err = np.median(loc_abs_err)
+    max_abs_err = np.max(loc_abs_err)
+    min_abs_err = np.min(loc_abs_err)
+
     collin = np.dot(q / np.linalg.norm(q), psi / np.linalg.norm(psi))
+
+    tmp_q = np.reshape(q, (num_nodes, 3))
+    tmp_psi = np.reshape(psi, (num_nodes, 3))
+    loc_collin = np.einsum(
+        "ij,ij->i",
+        tmp_q / np.linalg.norm(tmp_q, axis=1)[:, None],
+        tmp_psi / np.linalg.norm(tmp_psi, axis=1)[:, None]
+    )
+
     if isinstance(pot_mesh, cons_pot_mesh.Cons_Pot_Mesh):
         if isinstance(geo_mesh, lin_geo_mesh.Lin_Geo_Mesh):
             trans_v = (RDL_mobil_helper.calc_cp_le_trans_vel(geo_mesh, q))
@@ -310,9 +357,15 @@ def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
         "local_absolute_L2_error": loc_abs_err,
         "total_relative_L2_error": tot_rel_err,
         "total_absolute_L2_error": tot_abs_err,
+        "avg_absolute_L2_error": avg_abs_err,
+        "med_absolute_L2_error": med_abs_err,
+        "max_absolute_L2_error": max_abs_err,
+        "min_absolute_L2_error": min_abs_err,
+        "local_collinearity": loc_collin,
         "collinearity": collin,
         "trans_velocity": trans_v,
         "rot_velocity": rot_v,
+        "eigenvalue": eigval,
     }
     return ret
 
@@ -343,8 +396,13 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
     num_nodes = pot_mesh.get_nodes().shape[0]
     u_d_3x3 = RDL_eig_helper.make_quad_eig_vels(pot_mesh, dims, kappa_vec) # (N, 3)
     loc_rel_err = []
+    loc_abs_err = []
     tot_rel_err = []
     tot_abs_err = []
+    avg_abs_err = []
+    med_abs_err = []
+    max_abs_err = []
+    min_abs_err = []
     collin = []
     trans_v = []
     rot_v = []
@@ -353,11 +411,20 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
         q = np.linalg.solve(K + np.identity(3*num_nodes), (eigval_3x3[i] + 1) * psi) # (3N,)
         diff = q - psi
         base = np.linalg.norm(np.reshape(psi, (num_nodes, 3)), axis=1)
-        loc_abs_err = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
-        #loc_rel_err.append(np.divide(tmp_0, base, out=np.zeros_like(tmp_0), where=(base > tol)))
-        loc_rel_err = loc_abs_err / np.mean(base)
+        abs_err = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
+        loc_abs_err.append(abs_err)
+
+        #problably a poor error measure
+        loc_rel_err.append(np.divide(abs_err, base, out=np.zeros_like(abs_err), where=(base > tol)))
+
         tot_abs_err.append(np.linalg.norm(diff))
         tot_rel_err.append(np.linalg.norm(diff) / np.linalg.norm(psi))
+
+        avg_abs_err.append(np.mean(abs_err))
+        med_abs_err.append(np.median(abs_err))
+        max_abs_err.append(np.max(abs_err))
+        min_abs_err.append(np.min(abs_err))
+
         collin.append(np.dot(q / np.linalg.norm(q), psi / np.linalg.norm(psi)))
         if isinstance(pot_mesh, cons_pot_mesh.Cons_Pot_Mesh):
             if isinstance(geo_mesh, lin_geo_mesh.Lin_Geo_Mesh):
@@ -379,21 +446,16 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
         "local_absolute_L2_error": loc_abs_err,
         "total_relative_L2_error": tot_rel_err,
         "total_absolute_L2_error": tot_abs_err,
+        "avg_absolute_L2_error": avg_abs_err,
+        "med_absolute_L2_error": med_abs_err,
+        "max_absolute_L2_error": max_abs_err,
+        "min_absolute_L2_error": min_abs_err,
         "collinearity": collin,
         "trans_velocity": trans_v,
         "rot_velocity": rot_v,
+        "eigenvalue": eigval_3x3,
     }
     return ret
-
-
-class Mesh_Type(Enum):
-    LINEAR = 1
-    QUADRATIC = 2
-
-
-class Pot_Type(Enum):
-    CONSTANT = 0
-    LINEAR = 1
 
 
 if __name__ == "__main__":

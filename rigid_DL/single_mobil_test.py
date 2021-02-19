@@ -77,35 +77,30 @@ def main():
     K = stiff_map[(pot_type, mesh_type)](pot_mesh, geo_mesh) # stiffness matrix
     #eig_vals, _eig_vecs = np.linalg.eig(K)
     #np.savetxt("{}_eig.txt".format(args.out_tag), np.sort(np.real(eig_vals)))
+    
+    #print("Rotational flow")
+    #E_d = np.array(
+    #    [
+    #        [0., 1., 0.,],
+    #        [-1., 0., 0.,],
+    #        [0., 0., 0.,]
+    #    ]
+    #)
+    #E_c = np.zeros(3)
 
-    """
-    E_d = np.array(
-        [
-            [0., 1., 0.,],
-            [0., 0., 0.,],
-            [0., 0., 0.,]
-        ]
-    )
-    E_c = np.zeros(3)
-    """
+    print("E12 flow")
     E_d, E_c = RDL_eig_funs.E_12(dims)
     eigval_12 = RDL_eig_vals.lambda_12(dims)
 
     pot_nodes = pot_mesh.get_nodes()
     num_nodes = pot_nodes.shape[0]
-    u_d = np.zeros((num_nodes, 3))
+    psi = np.zeros((num_nodes, 3))
     for m in range(num_nodes):
         node = pot_nodes[m]
         xx = node - geo_mesh.get_centroid()
-        u_d[m] = E_d @ xx - np.cross(E_c, xx)
+        psi[m] = E_d @ xx - np.cross(E_c, xx)
 
-    # half translation, half E12
-    tmp = np.zeros((num_nodes, 3))
-    tmp[:, 0] = 1.
-    
-    c_0 = (1. / (4. * np.pi))
-    f_vec = c_0 * -1 * (1. + eigval_12) * np.ravel(u_d)
-    q = np.linalg.solve(K + np.identity(3*num_nodes), f_vec) # (3N,)
+    q = np.linalg.solve(K + np.identity(3*num_nodes), (1. + eigval_12) * np.ravel(psi)) # (3N,)
 
     if isinstance(pot_mesh, cons_pot_mesh.Cons_Pot_Mesh):
         if isinstance(geo_mesh, lin_geo_mesh.Lin_Geo_Mesh):
@@ -128,16 +123,13 @@ def main():
     print("rotational velocity:")
     print(rot_v.tolist())
 
-    psi = c_0 * -1 * (u_d)
-    print("q:")
-    print(np.reshape(q, (num_nodes, 3)))
-    print("psi:")
-    print(psi)
-    """
-    tot_rel_err = np.linalg.norm(diff) / np.linalg.norm(psi)
-    print("total relative error:")
-    print(tot_rel_err)
-    """
+    out_vec = np.reshape(q, (num_nodes, 3))
+    norm_err = np.linalg.norm(out_vec - psi, axis=1)
+    mean_err = np.mean(norm_err)
+    print("Avg. absolute L2 error:")
+    print(mean_err)
+    print("Avg. relative L2 error:")
+    print(mean_err / RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, psi))
 
 
 def lin_flow_solves(pot_mesh, geo_mesh, K_ev):

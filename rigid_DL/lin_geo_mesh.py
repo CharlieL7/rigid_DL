@@ -32,6 +32,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         print(self.centroid)
         self.normalize_n() # normal vectors normalized
         self.mom_inertia = self.calc_moment_inertia_tensor()
+        self.fix_mom_inertia()
         print("Moment of inertia tensor:")
         print(self.mom_inertia)
         self.dims = self.calc_ellip_dims()

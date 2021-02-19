@@ -247,7 +247,6 @@ def main():
             "rot_vel,"
             "collinearity,"
             "tot_abs_err,"
-            "tot_rel_err,"
             "avg_abs_err,"
             "med_abs_err,"
             "max_abs_err,"
@@ -261,7 +260,6 @@ def main():
                 ret["rot_velocity"],
                 ret["collinearity"],
                 ret["total_absolute_L2_error"],
-                ret["total_relative_L2_error"],
                 ret["avg_absolute_L2_error"],
                 ret["med_absolute_L2_error"],
                 ret["max_absolute_L2_error"],
@@ -274,7 +272,6 @@ def main():
                 ret_3x3["rot_velocity"][i],
                 ret_3x3["collinearity"][i],
                 ret_3x3["total_absolute_L2_error"][i],
-                ret_3x3["total_relative_L2_error"][i],
                 ret_3x3["avg_absolute_L2_error"][i],
                 ret_3x3["med_absolute_L2_error"][i],
                 ret_3x3["max_absolute_L2_error"][i],
@@ -290,14 +287,8 @@ def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
         geo_mesh: geometric mesh
         K_ev: dict of {K, eigval, E_d, E_c, f, l, mu}
     Returns:
-        dict of keys:
-            local_relative_L2_error: local L2 norm error (N,) ndarray
-            total_relative_L2_error: L2 norm of error between q and psi
-            collinearity: collinearity of q and psi (1 = exactly collinear)
-            trans_velocity: translational velocity (3,) ndarray
-            rot_velocity: rotational velocity (3,) ndarray
+        dict, see bottom of function
     """
-    tol = 1e-6 #lower bound for norm about equal to zero
     num_nodes = pot_mesh.get_nodes().shape[0]
     K = K_ev["K"]
     eigval = K_ev["eigval"]
@@ -310,17 +301,12 @@ def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
     psi = m_a.make_forcing_vec(pot_mesh, geo_mesh, np.ravel(u_d), f, l, mu) # eigenvector (3N,)
     q = np.linalg.solve(K + np.identity(3*num_nodes), (eigval + 1) * psi) # (3N,)
     diff = q - psi
-    base = np.linalg.norm(np.reshape(psi, (num_nodes, 3)), axis=1)
     loc_abs_err = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
 
     print("Average L2 psi")
     print(np.mean(np.linalg.norm(np.reshape(psi, (num_nodes, 3)))))
 
-    # Problably a poor error measure
-    loc_rel_err = np.divide(loc_abs_err, base, out=np.zeros_like(loc_abs_err), where=(base > tol))
-
     tot_abs_err = np.linalg.norm(diff)
-    tot_rel_err = np.linalg.norm(diff) / np.linalg.norm(base)
 
     avg_abs_err = np.mean(loc_abs_err)
     med_abs_err = np.median(loc_abs_err)
@@ -353,9 +339,7 @@ def lin_flow_solves(pot_mesh, geo_mesh, K_ev):
             rot_v = (RDL_mobil_helper.calc_lp_qe_rot_vel(pot_mesh, geo_mesh, q))
 
     ret = {
-        "local_relative_L2_error": loc_rel_err,
         "local_absolute_L2_error": loc_abs_err,
-        "total_relative_L2_error": tot_rel_err,
         "total_absolute_L2_error": tot_abs_err,
         "avg_absolute_L2_error": avg_abs_err,
         "med_absolute_L2_error": med_abs_err,
@@ -378,14 +362,8 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
         geo_mesh: geometric mesh
         K_ev: dict of {K, eigval_3x3, dims, kappa_vec, f, l, mu}
     Returns:
-        dict of keys:
-            local_relative_L2_error: local L2 norm error (N,) ndarray
-            total_relative_L2_error: L2 norm of error between q and psi
-            collinearity: collinearity of q and psi (1 = exactly collinear)
-            trans_velocity: translational velocity (3,) ndarray
-            rot_velocity: rotational velocity (3,) ndarray
+        dict, see bottom of function
     """
-    tol = 1e-6 #lower bound for norm about equal to zero
     K = K_ev["K"]
     eigval_3x3 = K_ev["eigval_3x3"]
     dims = K_ev["dims"]
@@ -395,9 +373,7 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
     mu = K_ev["mu"]
     num_nodes = pot_mesh.get_nodes().shape[0]
     u_d_3x3 = RDL_eig_helper.make_quad_eig_vels(pot_mesh, dims, kappa_vec) # (N, 3)
-    loc_rel_err = []
     loc_abs_err = []
-    tot_rel_err = []
     tot_abs_err = []
     avg_abs_err = []
     med_abs_err = []
@@ -410,15 +386,10 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
         psi = m_a.make_forcing_vec(pot_mesh, geo_mesh, np.ravel(u_d), f, l, mu) # eigenvector (3N,)
         q = np.linalg.solve(K + np.identity(3*num_nodes), (eigval_3x3[i] + 1) * psi) # (3N,)
         diff = q - psi
-        base = np.linalg.norm(np.reshape(psi, (num_nodes, 3)), axis=1)
         abs_err = np.linalg.norm(np.reshape(diff, (num_nodes, 3)), axis=1)
         loc_abs_err.append(abs_err)
 
-        #problably a poor error measure
-        loc_rel_err.append(np.divide(abs_err, base, out=np.zeros_like(abs_err), where=(base > tol)))
-
         tot_abs_err.append(np.linalg.norm(diff))
-        tot_rel_err.append(np.linalg.norm(diff) / np.linalg.norm(psi))
 
         avg_abs_err.append(np.mean(abs_err))
         med_abs_err.append(np.median(abs_err))
@@ -442,9 +413,7 @@ def quad_flow_solves(pot_mesh, geo_mesh, K_ev):
                 rot_v.append(RDL_mobil_helper.calc_lp_qe_rot_vel(pot_mesh, geo_mesh, q))
 
     ret = {
-        "local_relative_L2_error": loc_rel_err,
         "local_absolute_L2_error": loc_abs_err,
-        "total_relative_L2_error": tot_rel_err,
         "total_absolute_L2_error": tot_abs_err,
         "avg_absolute_L2_error": avg_abs_err,
         "med_absolute_L2_error": med_abs_err,

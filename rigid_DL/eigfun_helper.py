@@ -66,7 +66,7 @@ def calc_ext_flow_magnitude(types, pot_mesh, geo_mesh, psi):
     Returns:
         external flow magnitude: scalar value
     """
-    num_nodes = pot_mesh.get_faces().shape[0]
+    num_nodes = pot_mesh.get_nodes().shape[0]
     tmp_psi = np.reshape(psi, (num_nodes, 3))
     norm_psi = np.linalg.norm(tmp_psi, axis=1)
     func_map = {

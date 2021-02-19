@@ -6,10 +6,10 @@ import numpy as np
 import meshio
 from rigid_DL import lin_geo_mesh, quad_geo_mesh, cons_pot_mesh, lin_pot_mesh
 import rigid_DL.mat_assembly as mata
-import rigid_DL.eigenfunctions as eigfuns
-import rigid_DL.eigenvalues as eigvals
-import rigid_DL.gauss_quad as gq
-import rigid_DL.eigfun_helper as eig_helper
+import rigid_DL.eigfun_helper as RDL_eig_helper
+import rigid_DL.mobil_helper as RDL_mobil_helper
+import rigid_DL.eigenfunctions as RDL_eig_funs
+import rigid_DL.eigenvalues as RDL_eig_vals
 from rigid_DL.enums import Mesh_Type, Pot_Type
 
 
@@ -31,8 +31,7 @@ def main():
     )
     args = parser.parse_args()
 
-    out_name = args.out_tag
-    expected_dims = args.dims
+    dims = args.dims
     pot_type = Pot_Type(args.potential)
 
     io_mesh = meshio.read(args.mesh)
@@ -66,54 +65,99 @@ def main():
         (Pot_Type.CONSTANT, Mesh_Type.QUADRATIC): mata.make_mat_cp_qe,
         (Pot_Type.LINEAR, Mesh_Type.QUADRATIC): mata.make_mat_lp_qe,
     }
-    C = stiff_map[(pot_type, mesh_type)](pot_mesh, geo_mesh) # stiffness matrix
+    K = stiff_map[(pot_type, mesh_type)](pot_mesh, geo_mesh) # stiffness matrix
 
     # Linear eigenfunctions
-    E_d, E_c = eigfuns.E_12(geo_mesh, expected_dims)
-    eigval_12 = eigvals.lambda_12(expected_dims)
-    abs_err_12, v_in_12, percent_err_12 = lin_eigval_err(
+    E_d, E_c = RDL_eig_funs.E_12(dims)
+    eigval_12 = RDL_eig_vals.lambda_12(dims)
+    ret_E12 = lin_eigval_err(
         pot_mesh,
-        {"C": C, "eigval": eigval_12, "E_d": E_d, "E_c": E_c},
+        geo_mesh,
+        {
+            "K": K,
+            "eigval": eigval_12,
+            "E_d": E_d,
+            "E_c": E_c,
+            "pot_type": pot_type,
+            "mesh_type": mesh_type,
+        },
+    )
+    E_d, E_c = RDL_eig_funs.E_23(dims)
+    eigval_23 = RDL_eig_vals.lambda_23(dims)
+    ret_E23 = lin_eigval_err(
+        pot_mesh,
+        geo_mesh,
+        {
+            "K": K,
+            "eigval": eigval_23,
+            "E_d": E_d,
+            "E_c": E_c,
+            "pot_type": pot_type,
+            "mesh_type": mesh_type,
+        },
+    )
+    E_d, E_c = RDL_eig_funs.E_31(dims)
+    eigval_31 = RDL_eig_vals.lambda_31(dims)
+    ret_E31 = lin_eigval_err(
+        pot_mesh,
+        geo_mesh,
+        {
+            "K": K,
+            "eigval": eigval_31,
+            "E_d": E_d,
+            "E_c": E_c,
+            "pot_type": pot_type,
+            "mesh_type": mesh_type,
+        },
+    )
+    E_d, E_c = RDL_eig_funs.diag_eigvec("+", dims)
+    eigval_p = RDL_eig_vals.lambda_pm("+", dims)
+    ret_Ep = lin_eigval_err(
+        pot_mesh,
+        geo_mesh,
+        {
+            "K": K,
+            "eigval": eigval_p,
+            "E_d": E_d,
+            "E_c": E_c,
+            "pot_type": pot_type,
+            "mesh_type": mesh_type,
+        },
+    )
+    E_d, E_c = RDL_eig_funs.diag_eigvec("-", dims)
+    eigval_m = RDL_eig_vals.lambda_pm("-", dims)
+    ret_Em = lin_eigval_err(
+        pot_mesh,
+        geo_mesh,
+        {
+            "K": K,
+            "eigval": eigval_m,
+            "E_d": E_d,
+            "E_c": E_c,
+            "pot_type": pot_type,
+            "mesh_type": mesh_type,
+        },
     )
 
-    E_d, E_c = eigfuns.E_23(geo_mesh, expected_dims)
-    eigval_23 = eigvals.lambda_23(expected_dims)
-    abs_err_23, v_in_23, percent_err_23 = lin_eigval_err(
+    # Quadratic flows
+    kappa_vec = RDL_eig_vals.calc_3x3_eval(dims)
+    eigval_3x3 = -(1 + kappa_vec) / (kappa_vec -1)
+    ret_3x3 = quad_eigval_err(
         pot_mesh,
-        {"C": C, "eigval": eigval_23, "E_d": E_d, "E_c": E_c},
+        geo_mesh,
+        {
+            "K": K,
+            "eigval_3x3": eigval_3x3,
+            "kappa_vec": kappa_vec,
+            "dims": dims,
+            "pot_type": pot_type,
+            "mesh_type": mesh_type,
+        },
     )
 
-    E_d, E_c = eigfuns.E_31(geo_mesh, expected_dims)
-    eigval_31 = eigvals.lambda_31(expected_dims)
-    abs_err_31, v_in_31, percent_err_31 = lin_eigval_err(
-        pot_mesh,
-        {"C": C, "eigval": eigval_31, "E_d": E_d, "E_c": E_c},
-    )
-
-    E_d, E_c = eigfuns.diag_eigvec("+", geo_mesh, expected_dims)
-    eigval_p = eigvals.lambda_pm("+", expected_dims)
-    abs_err_p, v_in_p, percent_err_p = lin_eigval_err(
-        pot_mesh,
-        {"C": C, "eigval": eigval_p, "E_d": E_d, "E_c": E_c},
-    )
-
-    E_d, E_c = eigfuns.diag_eigvec("-", geo_mesh, expected_dims)
-    eigval_m = eigvals.lambda_pm("-", expected_dims)
-    abs_err_m, v_in_m, percent_err_m = lin_eigval_err(
-        pot_mesh,
-        {"C": C, "eigval": eigval_m, "E_d": E_d, "E_c": E_c},
-    )
-
-    if np.allclose(expected_dims, [1., 1., 1.,]):
-        print("Sphere, setting quadratic ROS eigenfunctions to 0")
-        abs_err_3x3 = np.zeros((3, pot_mesh.get_nodes().shape[0], 3))
-        v_in_3x3 = abs_err_3x3
-        percent_err_3x3 = abs_err_3x3
-    else:
-        # 3x3 system quadratic eigenfunctions
-        kappa_vec = eigvals.calc_3x3_eval(expected_dims)
-        abs_err_3x3, v_in_3x3, percent_err_3x3 = quad_eigval_err(pot_mesh, C, expected_dims, kappa_vec)
-
+    # Write out to vtk file
+    cells = [("triangle", pot_mesh.faces)] # to plot point data correctly must be this, might
+    # also be able to map point_data to specific points, not sure how to do this with meshio
     if pot_type == Pot_Type.CONSTANT:
         if mesh_type == Mesh_Type.LINEAR:
             cells = [("triangle", geo_mesh.faces)]
@@ -123,38 +167,31 @@ def main():
             geo_mesh.get_verts(),
             cells,
             cell_data={
-                "abs_err_12": [abs_err_12],
-                "v_in_12": [v_in_12],
-                "normalized_err_12": [percent_err_12],
-
-                "abs_err_23": [abs_err_23],
-                "v_in_23": [v_in_23],
-                "normalized_err_23": [percent_err_23],
-
-                "abs_err_31": [abs_err_31],
-                "v_in_31": [v_in_31],
-                "normalized_err_31": [percent_err_31],
-
-                "abs_err_p": [abs_err_p],
-                "v_in_p": [v_in_p],
-                "normalized_err_p": [percent_err_p],
-
-                "abs_err_m": [abs_err_m],
-                "v_in_m": [v_in_m],
-                "normalized_err_m": [percent_err_m],
-
-                "abs_err_330": [abs_err_3x3[0]],
-                "v_in_330": [v_in_3x3[0]],
-                "normalized_err_330": [percent_err_3x3[0]],
-
-                "abs_err_331": [abs_err_3x3[1]],
-                "v_in_331": [v_in_3x3[1]],
-                "normalized_err_331": [percent_err_3x3[1]],
-
-                "abs_err_332": [abs_err_3x3[2]],
-                "v_in_332": [v_in_3x3[2]],
-                "normalized_err_332": [percent_err_3x3[2]],
-            }
+                "rel_err_E12": [ret_E12["local_relative_L2_error"]],
+                "rel_err_E23": [ret_E23["local_relative_L2_error"]],
+                "rel_err_E31": [ret_E31["local_relative_L2_error"]],
+                "rel_err_Ep": [ret_Ep["local_relative_L2_error"]],
+                "rel_err_Em": [ret_Em["local_relative_L2_error"]],
+                "abs_err_E12": [ret_E12["local_absolute_L2_error"]],
+                "abs_err_E23": [ret_E23["local_absolute_L2_error"]],
+                "abs_err_E31": [ret_E31["local_absolute_L2_error"]],
+                "abs_err_Ep": [ret_Ep["local_absolute_L2_error"]],
+                "abs_err_Em": [ret_Em["local_absolute_L2_error"]],
+                "collin_E12": [ret_E12["local_collinearity"]],
+                "collin_E23": [ret_E23["local_collinearity"]],
+                "collin_E31": [ret_E31["local_collinearity"]],
+                "collin_Ep": [ret_Ep["local_collinearity"]],
+                "collin_Em": [ret_Em["local_collinearity"]],
+                "abs_err_3x3_0": [ret_3x3["local_absolute_L2_error"][0]],
+                "abs_err_3x3_1": [ret_3x3["local_absolute_L2_error"][1]],
+                "abs_err_3x3_2": [ret_3x3["local_absolute_L2_error"][2]],
+                "rel_err_3x3_0": [ret_3x3["local_relative_L2_error"][0]],
+                "rel_err_3x3_1": [ret_3x3["local_relative_L2_error"][1]],
+                "rel_err_3x3_2": [ret_3x3["local_relative_L2_error"][2]],
+                "collin_3x3_0": [ret_3x3["local_collinearity"][0]],
+                "collin_3x3_1": [ret_3x3["local_collinearity"][1]],
+                "collin_3x3_2": [ret_3x3["local_collinearity"][2]],
+            },
         )
     elif pot_type == Pot_Type.LINEAR:
         cells = [("triangle", pot_mesh.faces)] # to plot point data correctly must be this, might
@@ -163,126 +200,118 @@ def main():
             pot_mesh.get_nodes(),
             cells,
             point_data={
-                "abs_err_12": abs_err_12,
-                "v_in_12": v_in_12,
-                "normalized_err_12": percent_err_12,
-
-                "abs_err_23": abs_err_23,
-                "v_in_23":v_in_23,
-                "normalized_err_23": percent_err_23,
-
-                "abs_err_31": abs_err_31,
-                "v_in_31": v_in_31,
-                "normalized_err_31": percent_err_31,
-
-                "abs_err_p": abs_err_p,
-                "v_in_p": v_in_p,
-                "normalized_err_p": percent_err_p,
-
-                "abs_err_m": abs_err_m,
-                "v_in_m": v_in_m,
-                "normalized_err_m": percent_err_m,
-
-                "abs_err_330": abs_err_3x3[0],
-                "v_in_330": v_in_3x3[0],
-                "normalized_err_330": percent_err_3x3[0],
-
-                "abs_err_331": abs_err_3x3[1],
-                "v_in_331": v_in_3x3[1],
-                "normalized_err_331": percent_err_3x3[1],
-
-                "abs_err_332": abs_err_3x3[2],
-                "v_in_332":v_in_3x3[2],
-                "normalized_err_332": percent_err_3x3[2],
-            }
+                "rel_err_E12": ret_E12["local_relative_L2_error"],
+                "rel_err_E23": ret_E23["local_relative_L2_error"],
+                "rel_err_E31": ret_E31["local_relative_L2_error"],
+                "rel_err_Ep": ret_Ep["local_relative_L2_error"],
+                "rel_err_Em": ret_Em["local_relative_L2_error"],
+                "abs_err_E12": ret_E12["local_absolute_L2_error"],
+                "abs_err_E23": ret_E23["local_absolute_L2_error"],
+                "abs_err_E31": ret_E31["local_absolute_L2_error"],
+                "abs_err_Ep": ret_Ep["local_absolute_L2_error"],
+                "abs_err_Em": ret_Em["local_absolute_L2_error"],
+                "collin_E12": ret_E12["local_collinearity"],
+                "collin_E23": ret_E23["local_collinearity"],
+                "collin_E31": ret_E31["local_collinearity"],
+                "collin_Ep": ret_Ep["local_collinearity"],
+                "collin_Em": ret_Em["local_collinearity"],
+                "abs_err_3x3_0": ret_3x3["local_absolute_L2_error"][0],
+                "abs_err_3x3_1": ret_3x3["local_absolute_L2_error"][1],
+                "abs_err_3x3_2": ret_3x3["local_absolute_L2_error"][2],
+                "rel_err_3x3_0": ret_3x3["local_relative_L2_error"][0],
+                "rel_err_3x3_1": ret_3x3["local_relative_L2_error"][1],
+                "rel_err_3x3_2": ret_3x3["local_relative_L2_error"][2],
+                "collin_3x3_0": ret_3x3["local_collinearity"][0],
+                "collin_3x3_1": ret_3x3["local_collinearity"][1],
+                "collin_3x3_2": ret_3x3["local_collinearity"][2],
+            },
         )
-    meshio.write("{}_out.vtk".format(out_name), mesh_io, file_format="vtk")
+    meshio.write("{}_out.vtk".format(args.out_tag), mesh_io, file_format="vtk")
 
 
-def lin_eigval_err(pot_mesh, C_ev):
+def lin_eigval_err(pot_mesh, geo_mesh, K_ev):
     """
     Linear eigenvalue/eigenvector error function
 
     Parameters:
         pot_mesh: potential mesh
-        C_ev: dict of {K, eigval, E_d, E_c}
-    Returns:
-        err_arr: linear error at each node
-        v_in: eigenfunction at each node
-        per_err_arr: linear error normalized by L2 norm at node
+        geo_mesh: geometric mesh
+        K_ev: dict of {K, eigval, E_d, E_c, pot_type, mesh_type}
     """
-    C = C_ev["C"]
-    eigval = C_ev["eigval"]
-    E_d = C_ev["E_d"]
-    E_c = C_ev["E_c"]
-    tol = 1e-6 #lower bound for norm about equal to zero
-    v_in = eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
-    lambda_mat = eigval * np.identity(C.shape[0])
-    g = np.dot((lambda_mat - C), v_in.flatten("C"))
-    g = g.reshape(v_in.shape, order="C")
-    err_arr = np.linalg.norm(g, axis=1)
-    base = eigval * v_in
-    base = np.linalg.norm(base, axis=1)
-    # only divides when base is > than tol, otherwise sets to zero
-    per_err_arr = np.divide(err_arr, base, out=np.zeros_like(err_arr), where=base>tol)
-    return (err_arr, v_in, per_err_arr)
+    num_nodes = pot_mesh.get_nodes().shape[0]
+    K = K_ev["K"]
+    eigval = K_ev["eigval"]
+    E_d = K_ev["E_d"]
+    E_c = K_ev["E_c"]
+    pot_type = K_ev["pot_type"]
+    mesh_type = K_ev["mesh_type"]
+    psi = RDL_eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
+    lambda_mat = eigval * np.identity(K.shape[0])
+    out_vec = np.reshape(K @ np.ravel(psi), (num_nodes, 3))
+    g = np.dot((lambda_mat - K), np.ravel(psi))
+    g = g.reshape(psi.shape, order="C")
+    abs_err_arr = np.linalg.norm(g, axis=1)
+    loc_collin = np.einsum(
+        "ij,ij->i",
+        out_vec / np.linalg.norm(out_vec, axis=1)[:,None],
+        psi / np.linalg.norm(psi, axis=1)[:,None]
+    )
+    rel_err_arr = abs_err_arr / RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, psi)
+    ret = {
+        "local_absolute_L2_error": abs_err_arr,
+        "local_relative_L2_error":rel_err_arr,
+        "local_collinearity": loc_collin,
+        "eigenvalue": eigval,
+    }
+    return ret
 
 
-def quad_eigval_err(pot_mesh, C, dims, kappa_vec):
+def quad_eigval_err(pot_mesh, geo_mesh, K_ev):
     """
     Quadratic 3x3 system eigenfunction error function
 
     Parameters:
         pot_mesh: potential mesh
-        C: discrete DL operator for mesh
+        geo_mesh: geometric mesh
         dims: ellipsoidal dimensions
-        kappa_vec: the three kappa values for the 3x3 system associated with
-        the eigenfunctions
+        K_ev: dict of {K, eigval_3x3, dims, kappa_vec, pot_type, mesh_type}
     """
-    tol = 1e-6 #lower bound for norm about equal to zero
+    num_nodes = pot_mesh.get_nodes().shape[0]
+    K = K_ev["K"]
+    eigval_3x3 = K_ev["eigval_3x3"]
+    dims = K_ev["dims"]
+    kappa_vec = K_ev["kappa_vec"]
+    pot_type = K_ev["pot_type"]
+    mesh_type = K_ev["mesh_type"]
     eigval_3x3 = -(1 + kappa_vec) / (kappa_vec -1)
-    v_3x3_in = eig_helper.make_quad_eig_vels(pot_mesh, dims, kappa_vec)
-    err_3x3 = []
-    v_in_norm_3x3 = []
-    per_err_3x3 = []
+    v_3x3_in = RDL_eig_helper.make_quad_eig_vels(pot_mesh, dims, kappa_vec)
+    abs_err_3x3 = []
+    rel_err_3x3 = []
+    loc_collin_3x3 = []
     for i, v_in in enumerate(v_3x3_in):
-        lambda_mat = eigval_3x3[i] * np.identity(C.shape[0])
-        tmp_v_in_norm = np.linalg.norm(v_in, axis=1)
-        tmp_err = np.dot((lambda_mat - C), v_in.flatten("C"))
+        out_vec = np.reshape(K @ np.ravel(v_in), (num_nodes, 3))
+        loc_collin_3x3.append(
+            np.einsum(
+                "ij,ij->i",
+                out_vec / np.linalg.norm(out_vec, axis=1)[:,None],
+                v_in / np.linalg.norm(v_in, axis=1)[:,None]
+            )
+        )
+        lambda_mat = eigval_3x3[i] * np.identity(K.shape[0])
+        tmp_err = np.dot((lambda_mat - K), v_in.flatten("C"))
         tmp_err = tmp_err.reshape(v_in.shape, order="C")
         tmp_err = np.linalg.norm(tmp_err, axis=1)
-        base = eigval_3x3[i] * v_in
-        base = np.linalg.norm(base, axis=1)
-        tmp_per_err = np.divide(tmp_err, base, out=np.zeros_like(tmp_err), where=base>tol)
-        v_in_norm_3x3.append(tmp_v_in_norm)
-        err_3x3.append(tmp_err)
-        per_err_3x3.append(tmp_per_err)
-    return (err_3x3, v_in_norm_3x3, per_err_3x3)
+        abs_err_3x3.append(tmp_err)
+        rel_err_3x3.append(tmp_err / RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, v_in))
 
+    ret = {
+        "local_absolute_L2_error": abs_err_3x3,
+        "local_relative_L2_error":rel_err_3x3,
+        "local_collinearity": loc_collin_3x3,
+        "eigenvalues": eigval_3x3,
+    }
+    return ret
 
-def calc_avg_v_in_norm(mesh, mesh_type, E_d, E_c):
-    """
-    Surface average of eigenfunction
-    """
-    avg_v_in_norm = 0.
-    if mesh_type == Mesh_Type.LINEAR:
-        for i, face in enumerate(mesh.faces):
-            nodes = mesh.get_nodes(face)
-            avg_v_in_norm += gq.int_over_tri_lin(
-                eigfuns.make_lin_psi_func(E_d, E_c),
-                nodes,
-                mesh.hs[i],
-            )
-    elif mesh_type == Mesh_Type.QUADRATIC:
-        for i, face in enumerate(mesh.faces):
-            nodes = mesh.get_nodes(face)
-            avg_v_in_norm += gq.int_over_tri_quad(
-                eigfuns.make_lin_psi_func(E_d, E_c),
-                nodes,
-                mesh.hs[i],
-            )
-    avg_v_in_norm /= mesh.surf_area
-    return avg_v_in_norm
 
 if __name__ == "__main__":
     main()

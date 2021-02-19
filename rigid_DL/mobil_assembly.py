@@ -77,6 +77,8 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
     w = lin_geo_mesh.get_w()
     A_m = lin_geo_mesh.get_A_m()
     S_D = lin_geo_mesh.get_surface_area()
+    print("A_m")
+    print(A_m)
 
     for face_num in range(num_faces):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
@@ -99,7 +101,8 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
         for src_num in range(num_faces):
             K[(3 * src_num):(3 * src_num + 3),
               (3 * face_num):(3 * face_num + 3)] += v_sub_mat
-            src_center = cons_pot_mesh.get_node(src_num)
+            #src_center = cons_pot_mesh.get_node(src_num)
+            src_center = lin_geo_mesh.get_tri_center(src_num)
             X_0 = src_center - x_c
             omega_mat = np.einsum("ijk,js,k->is", geo.LC_3, tmp_omega_mat, X_0)
             K[(3 * src_num):(3 * src_num + 3),
@@ -127,6 +130,7 @@ def add_cp_le_RBM_terms_alt(K, cons_pot_mesh, lin_geo_mesh):
     for face_num in range(num_faces):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_hs = lin_geo_mesh.get_hs(face_num)
+        face_center = lin_geo_mesh.get_tri_center(face_num)
         v_sub_mat = (1. / S_D) * (np.identity(3) * 0.5 * face_hs) # simple integral
         tmp_omega = []
         for m in range(3):

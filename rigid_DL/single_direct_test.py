@@ -33,7 +33,6 @@ def main():
     args = parser.parse_args()
 
     out_name = args.out_tag
-    expected_dims = args.dims
     pot_type = Pot_Type(args.potential)
 
     io_mesh = meshio.read(args.mesh)
@@ -70,22 +69,41 @@ def main():
     K = stiff_map[(pot_type, mesh_type)](pot_mesh, geo_mesh) # stiffness matrix
 
     eig_vals, _eig_vecs = np.linalg.eig(K)
-    np.savetxt("{}_eig.txt".format(args.out_tag), np.sort(np.real(eig_vals)))
 
-    
     # Linear eigenfunctions
     num_nodes = pot_mesh.get_nodes().shape[0]
-    E_d, E_c = eigfuns.E_12(expected_dims)
-    eigval_12 = eigvals.lambda_12(expected_dims)
-    eig_vec = eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
-    tmp = np.zeros((num_nodes, 3))
-    tmp[:, 0] = 1.
-    c_0 = (1. / (4. * np.pi))
-    u_d = c_0 * 0.5 * (-1. * tmp + eigval_12 * eig_vec)
-    out_vec = np.reshape(K @ np.ravel(u_d), eig_vec.shape, order="C")
+    pot_nodes = pot_mesh.get_nodes()
 
-    tmp_0 = np.ravel(0.5 * c_0 * (tmp + eig_vec))
-    tmp_1 = np.ravel(out_vec)
+    print("E12 flow")
+    E_d, E_c = eigfuns.E_12(args.dims)
+    eigval = eigvals.lambda_12(args.dims)
+    psi = np.zeros((num_nodes, 3))
+    for m in range(num_nodes):
+        node = pot_nodes[m]
+        xx = node - geo_mesh.get_centroid()
+        psi[m] = E_d @ xx - np.cross(E_c, xx)
+
+    #print("Rotational flow")
+    #E = np.array([
+    #    [0., 1., 0.,],
+    #    [-1., 0., 0.,],
+    #    [0., 0., 0.,],
+    #])
+    #eigval = -1.
+    #psi = eig_helper.make_lin_eig_vels(pot_mesh, E, np.zeros(3))
+    
+    #print("Translational flow")
+    #psi = np.zeros((num_nodes, 3))
+    #eigval = -1.
+    #psi[:,0] = 1.
+
+    out_vec = np.reshape(K @ np.ravel(psi), psi.shape, order="C")
+    norm_err = np.linalg.norm(out_vec - (eigval * psi), axis=1)
+    mean_err = np.mean(norm_err)
+    print("Avg. absolute L2 error:")
+    print(mean_err)
+    print("Avg. relative L2 error:")
+    print(mean_err / eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, psi))
 
     #print("Colinearlity:")
     #print(np.dot(tmp_0 / np.linalg.norm(tmp_0), tmp_1 / np.linalg.norm(tmp_1)))
@@ -93,43 +111,6 @@ def main():
     #print(np.linalg.norm(tmp_1 - tmp_0) / np.linalg.norm(tmp_0))
     #np.savetxt("base_vec_12.csv", eig_vec * eigval_12, delimiter=",")
     #np.savetxt("out_vec_12.csv", out_vec, delimiter=",")
-
-
-def lin_eigval_err(pot_mesh, C_ev):
-    """
-    Linear eigenvalue/eigenvector error function
-
-    Parameters:
-        pot_mesh: potential mesh
-        C_ev: dict of {K, eigval, E_d, E_v}
-    Returns:
-        err_arr: linear error at each node
-        v_in: eigenfunction at each node
-        per_err_arr: linear error normalized by L2 norm at node
-    """
-    C = C_ev["C"]
-    eigval = C_ev["eigval"]
-    E_d = C_ev["E_d"]
-    E_c = C_ev["E_c"]
-    tol = 1e-6 #lower bound for norm about equal to zero
-    v_in = eig_helper.make_lin_eig_vels(pot_mesh, E_d, E_c)
-    lambda_mat = eigval * np.identity(C.shape[0])
-    g = np.dot((lambda_mat - C), v_in.flatten("C"))
-    g = g.reshape(v_in.shape, order="C")
-    err_arr = np.linalg.norm(g, axis=1)
-    # only divides when base is > than tol, otherwise sets to zero
-    per_err_arr = np.divide(err_arr, base, out=np.zeros_like(err_arr), where=base>tol)
-    return (err_arr, v_in, per_err_arr)
-
-
-class Mesh_Type(Enum):
-    LINEAR = 1
-    QUADRATIC = 2
-
-
-class Pot_Type(Enum):
-    CONSTANT = 0
-    LINEAR = 1
 
 if __name__ == "__main__":
     main()

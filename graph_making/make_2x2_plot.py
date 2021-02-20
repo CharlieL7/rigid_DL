@@ -70,7 +70,7 @@ def main():
         axs[i].yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.))
         add_textbox(axs[i], args.tag + "_" + fn)
 
-    
+r  
     # Set common labels
     handles, labels = axs[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="center", bbox_to_anchor=(0.92, 0.5))

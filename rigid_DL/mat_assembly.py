@@ -4,6 +4,7 @@ Matrix assembly functions for the different parameterizations
 import numpy as np
 import rigid_DL.gauss_quad as gq
 import rigid_DL.geometric as geo
+import ctypes as ct
 
 def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     """
@@ -33,6 +34,13 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
                     face_nodes,
                     face_hs
                 )
+                if (face_num == 0 and src_num == 1):
+                    print("face_nodes")
+                    print(face_nodes)
+                    print("face_hs")
+                    print(face_hs)
+                    print("sub_mat")
+                    print(sub_mat)
                 C[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
                 C[(3 * src_num):(3 * src_num + 3),
@@ -43,6 +51,32 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
           (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
     C = np.dot(c_0, C)
     return C
+
+
+def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
+    """
+    This version links to C library for speed
+    """
+    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
+    mata_lib.add_cp_le_DL_terms.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
+        ct.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
+    ]
+    mata_lib.add_cp_le_DL_terms.restype = None
+    num_faces = int(lin_geo_mesh.get_faces().shape[0])
+    K = np.zeros((3 * num_faces, 3 * num_faces)).astype(np.float64)
+    nodes = cons_pot_mesh.get_nodes().astype(np.float64)
+    verts = lin_geo_mesh.get_verts().astype(np.float64)
+    faces = lin_geo_mesh.get_faces().astype(np.int32)
+    normals = lin_geo_mesh.normals.astype(np.float64)
+    hs_arr = lin_geo_mesh.hs.astype(np.float64)
+    mata_lib.add_cp_le_DL_terms(K, nodes, verts, faces, num_faces, normals, hs_arr)
+    return K
 
 
 def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):

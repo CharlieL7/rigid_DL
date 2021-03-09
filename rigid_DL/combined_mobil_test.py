@@ -57,8 +57,6 @@ def main():
 
     dims = args.dims
     #dims = geo_mesh.dims
-    print("dims:")
-    print(dims)
 
     pot_mesh_map = {
         (Pot_Type.CONSTANT, Mesh_Type.LINEAR): cons_pot_mesh.Cons_Pot_Mesh.make_from_geo_mesh(geo_mesh),

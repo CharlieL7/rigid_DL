@@ -28,15 +28,13 @@ class Quad_Geo_Mesh(Geo_Mesh):
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
         self.centroid = self.calc_mesh_centroid()
-        self.center_mesh();
-        print("Center of mass:")
-        print(self.centroid)
+        self.center_mesh()
         self.flip_n()
         self.mom_inertia = self.calc_moment_inertia_tensor()
         (self.w, self.A_m) = self.calc_rotation_eig() #w is 3 ROWS of eigenvectors
         print("Surface area:")
         print(self.surf_area)
-        print("Moment of inertia tensor:")
+        print("Moment of inertia:")
         print(self.mom_inertia)
 
 
@@ -86,7 +84,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         x_3 = self.verts[face[3]]
         x_4 = self.verts[face[4]]
         x_5 = self.verts[face[5]]
-        nodes = np.stack((x_0, x_1, x_2, x_3, x_4, x_5), axis=1)
+        nodes = np.stack((x_0, x_1, x_2, x_3, x_4, x_5), axis=0)
         return nodes
 
 
@@ -260,12 +258,12 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Paramters:
             xi : first parametric variable
             eta : second parameteric variable
-            nodes : six nodes of triangle as columns in 3x6 ndarray
+            nodes : six nodes of triangle as rows in 6x3 ndarray
         Returns:
             n : normal vector (3,) ndarray
         """
-        e_xi = np.matmul(nodes, geo.dphi_dxi_quadratic(xi, eta, nodes))
-        e_eta = np.matmul(nodes, geo.dphi_deta_quadratic(xi, eta, nodes))
+        e_xi = np.matmul(np.transpose(nodes), geo.dphi_dxi_quadratic(xi, eta, nodes))
+        e_eta = np.matmul(np.transpose(nodes), geo.dphi_deta_quadratic(xi, eta, nodes))
         n = np.cross(e_xi, e_eta)
 
         pt2tri = self.get_tri_center(nodes) - self.centroid

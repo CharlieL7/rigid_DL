@@ -15,11 +15,11 @@ def pos_linear(xi, eta, nodes):
     Parameters:
         eta : parametric coordinate, scalar
         xi : paramteric coordinate, scalar
-        nodes : three nodes of triangle as columns in 3x3 ndarray
+        nodes : three nodes of triangle as rows in 3x3 ndarray
     Returns:
         x : output position (3,) ndarray
     """
-    x = (1. - xi - eta) * nodes[:, 0] + xi * nodes[:, 1] + eta * nodes[:, 2]
+    x = (1. - xi - eta) * nodes[0] + xi * nodes[1] + eta * nodes[2]
     return x
 
 
@@ -30,7 +30,7 @@ def pos_quadratic(xi, eta, nodes):
     Parameters:
         xi : paramteric coordinate, scalar
         eta : parametric coordinate, scalar
-        nodes : six nodes of triangle as columns in 3x6 ndarray
+        nodes : six nodes of triangle as rows in 3x6 ndarray
     Returns:
         x : output position (3,) ndarray
     """
@@ -44,7 +44,7 @@ def pos_quadratic(xi, eta, nodes):
         1. / (beta * (1. - beta)) * eta * (1. - xi - eta),
         ])
     phi[0] = 1. - np.sum(phi)
-    x = np.matmul(nodes, phi)
+    x = np.matmul(np.transpose(nodes), phi)
     return x
 
 
@@ -59,7 +59,7 @@ def dphi_dxi_quadratic(xi, eta, nodes):
     Returns:
         dphi_dxi : dphi/dxi vector as ndarray shape (6)
     """
-    alpha, beta, gamma = calc_abg_alt(nodes)
+    alpha, beta, gamma = calc_abg(nodes)
     (xi, eta) = (eta, xi)
     dphi_dxi = np.array([
         0.,
@@ -84,7 +84,7 @@ def dphi_deta_quadratic(xi, eta, nodes):
     Returns:
         dphi_deta : dphi/deta vector as ndarray shape (6)
     """
-    alpha, beta, gamma = calc_abg_alt(nodes)
+    alpha, beta, gamma = calc_abg(nodes)
     (xi, eta) = (eta, xi)
     dphi_deta = np.array([
         0.,
@@ -104,16 +104,16 @@ def calc_abg(nodes):
     of a six-node curved triangle
 
     Parameters:
-        nodes : six nodes of triangle as columns in 3x6 ndarray
+        nodes : six nodes of triangle as rows in 3x6 ndarray
     Returns:
         (alpha, beta, gamma) : tuple of floats
     """
-    alpha = 1. / (1. + np.linalg.norm(nodes[:, 3] - nodes[:, 1]) /
-                  np.linalg.norm(nodes[:, 3] - nodes[:, 0]))
-    beta = 1. / (1. + np.linalg.norm(nodes[:, 5] - nodes[:, 2]) /
-                 np.linalg.norm(nodes[:, 5] - nodes[:, 0]))
-    gamma = 1. / (1. + np.linalg.norm(nodes[:, 4] - nodes[:, 1]) /
-                  np.linalg.norm(nodes[:, 4] - nodes[:, 2]))
+    alpha = 1. / (1. + np.linalg.norm(nodes[3] - nodes[1]) /
+                  np.linalg.norm(nodes[3] - nodes[0]))
+    beta = 1. / (1. + np.linalg.norm(nodes[5] - nodes[2]) /
+                 np.linalg.norm(nodes[5] - nodes[0]))
+    gamma = 1. / (1. + np.linalg.norm(nodes[4] - nodes[1]) /
+                  np.linalg.norm(nodes[4] - nodes[2]))
     return (alpha, beta, gamma)
 
 
@@ -265,6 +265,9 @@ def v_sph2cart(x, v):
 
 
 ### Alternative shape functions for testing ###
+# these use the formulation in Pozrikidis 1992 while above uses from Pozrikidis 2002
+
+
 def calc_abg_alt(nodes):
     """
     Calculate the alpha, beta, and gamma geometrical parameters for the parameterization
@@ -275,13 +278,14 @@ def calc_abg_alt(nodes):
     Returns:
         (alpha, beta, gamma) : tuple of floats
     """
-    alpha = 1./(1 + np.linalg.norm(nodes[:, 5] - nodes[:, 0])/
-            np.linalg.norm(nodes[:, 5] - nodes[:, 2]))
-    beta = 1./(1 + np.linalg.norm(nodes[:, 4] - nodes[:, 1])/
-            np.linalg.norm(nodes[:, 4] - nodes[:, 2]))
-    gamma = 1./(1 + np.linalg.norm(nodes[:, 3] - nodes[:, 0])/
-            np.linalg.norm(nodes[:, 3] - nodes[:, 1]))
+    alpha = 1./(1 + np.linalg.norm(nodes[5] - nodes[0])/
+            np.linalg.norm(nodes[5] - nodes[2]))
+    beta = 1./(1 + np.linalg.norm(nodes[4] - nodes[1])/
+            np.linalg.norm(nodes[4] - nodes[2]))
+    gamma = 1./(1 + np.linalg.norm(nodes[3] - nodes[0])/
+            np.linalg.norm(nodes[3] - nodes[1]))
     return (alpha, beta, gamma)
+
 
 
 def dphi_deta_quadratic_alt(xi, eta, nodes):
@@ -330,7 +334,7 @@ def pos_quadratic_alt(xi, eta, nodes):
     ])
     phi[2] = 1. - np.sum(phi)
 
-    x = np.matmul(nodes, phi)
+    x = np.matmul(np.transpose(nodes), phi)
     return x
 
 

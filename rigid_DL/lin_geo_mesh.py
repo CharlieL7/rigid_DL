@@ -25,21 +25,19 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.normals = self.calc_all_n()
         self.hs = self.calc_all_hs()
         self.surf_area = self.calc_surf_area()
-        print("Surface area:")
-        print(self.surf_area)
         self.centroid = self.calc_mesh_centroid()
-        print("Center of mass:")
-        print(self.centroid)
         self.normalize_n() # normal vectors normalized
         self.mom_inertia = self.calc_moment_inertia_tensor()
         self.fix_mom_inertia()
-        print("Moment of inertia tensor:")
-        print(self.mom_inertia)
         self.dims = self.calc_ellip_dims()
         self.volume = self.calc_volume()
+        (self.w, self.A_m) = self.calc_rotation_eig()
+        print("Surface area:")
+        print(self.surf_area)
         print("Volume:")
         print(self.volume)
-        (self.w, self.A_m) = self.calc_rotation_eig()
+        print("Moment of inertia:")
+        print(self.mom_inertia)
 
 
     def get_verts(self):
@@ -64,13 +62,13 @@ class Lin_Geo_Mesh(Geo_Mesh):
         Paramters:
             face_num : face number
         Returns:
-            nodes : (3, 3) ndarray of nodes as columns
+            nodes : (3, 3) ndarray of nodes as rows
         """
         face = self.faces[face_num]
         x_0 = self.verts[face[0]]
         x_1 = self.verts[face[1]]
         x_2 = self.verts[face[2]]
-        nodes = np.stack((x_0, x_1, x_2), axis=1)
+        nodes = np.stack((x_0, x_1, x_2), axis=0)
         return nodes
 
 
@@ -132,7 +130,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         normals = np.empty([Nf, 3])
         for i, face in enumerate(self.faces):
             nodes = self.get_tri_nodes(i)
-            normals[i] = np.cross(nodes[:, 1] - nodes[:, 0], nodes[:, 2] - nodes[:, 0])
+            normals[i] = np.cross(nodes[1] - nodes[0], nodes[2] - nodes[0])
         return normals
 
 
@@ -288,7 +286,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
         Rotate the mesh by eigenvectors of the moment of inertia tensor and then
         get the lengths along each axis
         """
-
         [eigvals, eigvecs] = np.linalg.eig(self.mom_inertia)
         idx = eigvals.argsort()
         eigvals = eigvals[idx]

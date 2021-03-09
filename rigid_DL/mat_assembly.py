@@ -34,13 +34,6 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
                     face_nodes,
                     face_hs
                 )
-                if (face_num == 0 and src_num == 1):
-                    print("face_nodes")
-                    print(face_nodes)
-                    print("face_hs")
-                    print(face_hs)
-                    print("sub_mat")
-                    print(sub_mat)
                 C[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
                 C[(3 * src_num):(3 * src_num + 3),

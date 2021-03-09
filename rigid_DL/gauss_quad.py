@@ -31,7 +31,7 @@ def int_over_tri_lin(func, nodes, hs):
     Parameters:
         func: function to integrate, can return any order tensor
                expecting f(xi, eta, nodes)
-        nodes: 3x3 ndarray with nodes as column vectors
+        nodes: 3x3 ndarray with nodes as row vectors
         hs: triangle area
     Returns:
         integrated function
@@ -52,7 +52,7 @@ def int_over_tri_quad(func, nodes, hs):
     Parameters:
         func: function to integrate, can return any order tensor
                expecting f(eta, xi, nodes)
-        nodes: 3x6 ndarray with nodes as column vectors
+        nodes: 6x3 ndarray with nodes as row vectors
         hs: areas at the six quadrature points (6,) ndarray
     Returns:
         integrated function
@@ -74,7 +74,7 @@ def int_over_tri_quad_n(func, nodes, n):
     Parameters:
         func: function to integrate, must return (3,3,3) ndarray
                expecting f(eta, xi, nodes)
-        nodes: 3x6 ndarray with nodes as column vectors
+        nodes: 6x3 ndarray with nodes as row vectors
         n: normal vectors at the seven quadrature points (3, 6) ndarray
             (not normalized vectors, hs magnitude)
     Returns:
@@ -93,14 +93,14 @@ def quad_n(nodes):
     This function is use to reduce the number of times these values are recalculated.
 
     Parameters:
-        nodes: 3x6 ndarray with nodes as column vectors
+        nodes: 6x3 ndarray with nodes as row vectors
     Returns:
         normals: (3, 6) ndarray
     """
     normals = np.empty([3, 6])
     for i, (xi, eta) in enumerate(PARA_PTS):
-        e_xi = np.einsum("ij,j->i", nodes, geo.dphi_dxi_quadratic(xi, eta, nodes))
-        e_eta = np.einsum("ij,j->i", nodes, geo.dphi_deta_quadratic(xi, eta, nodes))
+        e_xi = np.einsum("ij,j->i", np.transpose(nodes), geo.dphi_dxi_quadratic(xi, eta, nodes))
+        e_eta = np.einsum("ij,j->i", np.transpose(nodes), geo.dphi_deta_quadratic(xi, eta, nodes))
         n = np.cross(e_xi, e_eta)
         normals[:, i] = n
     return normals
@@ -120,7 +120,7 @@ def int_over_tri_quad_slow(func, nodes, xc, tri_c):
     Parameters:
         func : function to integrate, can return any order tensor
                expecting f(eta, xi, n, nodes)
-        nodes : 3x6 ndarray with nodes as column vectors
+        nodes : 6x3 ndarray with nodes as row vectors
         xc: mesh centroid
         tri_c: triangle center
     Returns:
@@ -161,8 +161,8 @@ def int_over_tri_quad_slow(func, nodes, xc, tri_c):
 
     f = []
     for (xi, eta) in para_pts:
-        e_xi = np.matmul(nodes, geo.dphi_dxi_quadratic(xi, eta, nodes))
-        e_eta = np.matmul(nodes, geo.dphi_deta_quadratic(xi, eta, nodes))
+        e_xi = np.matmul(np.transpose(nodes), geo.dphi_dxi_quadratic(xi, eta, nodes))
+        e_eta = np.matmul(np.transpose(nodes), geo.dphi_deta_quadratic(xi, eta, nodes))
         n = np.cross(e_xi, e_eta)
         if np.dot(n, tri_c - xc) < 0.:
             print("reoriented normal")

@@ -118,7 +118,7 @@ def ellip_K_ij(dims):
     assert len(dims) == 3
     cons = np.empty(3)
     for i in range(3):
-        cons[i] = quad(K_ij_inte, 0, np.inf, args=(dims, i))[0]
+        cons[i] = quad(K_ij_inte, 0., 1., args=(dims, i))[0]
     return cons
 
 
@@ -133,10 +133,19 @@ def K_ij_inte(t, dims, i):
     """
     delta_t = np.sqrt((dims[0]**2 + t) * (dims[1]**2 + t) * (dims[2]**2 + t))
     tmp = (
-        (dims[(i) % 3]**2 + t) *
-        (dims[(i+1) % 3]**2 + t) *
-        delta_t
-    )**(-1)
+        (
+            (dims[(i) % 3]**2 + t) *
+            (dims[(i+1) % 3]**2 + t) *
+            delta_t
+        )**(-1) +
+        (
+            t**2. *
+            (dims[(i) % 3]**2 + (1./t)) *
+            (dims[(i+1) % 3]**2 + (1./t)) *
+            np.sqrt((dims[0]**2 + (1./t)) * (dims[1]**2 + (1./t)) * (dims[2]**2 + (1./t)))
+        )**(-1)
+    )
+
     return tmp
 
 
@@ -145,16 +154,26 @@ def ellip_K_123(dims):
     Other version seen in Martin 2019
     """
     assert len(dims) == 3
-    cons = quad(K_123_inte, 0, np.inf, args=(dims))[0]
+    cons = quad(K_123_inte, 0., 1., args=(dims))[0]
     return cons
 
 
 def K_123_inte(t, dims):
     delta_t = np.sqrt((dims[0]**2 + t) * (dims[1]**2 + t) * (dims[2]**2 + t))
     tmp = (
-        (dims[0]**2 + t) *
-        (dims[1]**2 + t) *
-        (dims[2]**2 + t) *
-        delta_t
-    )**(-1)
+        (
+            (dims[0]**2 + t) *
+            (dims[1]**2 + t) *
+            (dims[2]**2 + t) *
+            delta_t
+        )**(-1) +
+        (
+            t**2. *
+            (dims[0]**2 + (1./t)) *
+            (dims[1]**2 + (1./t)) *
+            (dims[2]**2 + (1./t)) *
+            np.sqrt((dims[0]**2 + (1./t)) * (dims[1]**2 + (1./t)) * (dims[2]**2 + (1./t)))
+        )**(-1)
+    )
     return tmp
+

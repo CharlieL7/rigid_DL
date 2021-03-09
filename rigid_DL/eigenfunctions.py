@@ -138,7 +138,8 @@ def calc_3x3_evec(dims, kappa):
     C_inv = np.linalg.inv(C)
 
     D = B @ C_inv
-    H = null_space(D)
+    # Not sure about the tolerance for this
+    H = null_space(D, rcond=1e-12)
 
     if H.size == 0:
         print("Error: empty quadratic flow vector H^(1), returning zero vector")

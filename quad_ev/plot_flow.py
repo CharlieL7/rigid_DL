@@ -3,9 +3,9 @@ import pyvista as pv
 import matplotlib.pyplot as plt
 
 H = np.array([
-[ 0.               ],
- [-0.707106781186547],
- [ 0.707106781186548],
+    [-0.974793639765174],
+    [ 0.157761465309759],
+    [ 0.157761465309759],
 ])
 
 fig = plt.figure()

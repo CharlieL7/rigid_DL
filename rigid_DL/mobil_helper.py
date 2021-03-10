@@ -50,7 +50,7 @@ def calc_cp_le_rot_vel(lin_geo_mesh, q):
         face_hs = lin_geo_mesh.get_hs(face_num)
         def make_omega_quad(q_vec):
             def omega_quad(xi, eta, nodes):
-                pos = geo.pos_linear(xi, eta, nodes)
+                pos = geo.linear_interp(xi, eta, nodes)
                 X = pos - x_c
                 return np.cross(X, q_vec)
             return omega_quad
@@ -131,7 +131,7 @@ def calc_lp_le_rot_vel(lin_pot_mesh, lin_geo_mesh, q):
         face_hs = lin_geo_mesh.get_hs(face_num)
         def make_omega_quad(face_num):
             def omega_quad(xi, eta, nodes):
-                pos = geo.pos_linear(xi, eta, nodes)
+                pos = geo.linear_interp(xi, eta, nodes)
                 X = pos - x_c
                 node_0 = pot_faces[face_num, 0]
                 node_1 = pot_faces[face_num, 1]
@@ -204,7 +204,7 @@ def calc_cp_qe_rot_vel(quad_geo_mesh, q):
         face_hs = quad_geo_mesh.get_hs(face_num)
         def make_omega_quad(q_vec):
             def omega_quad(xi, eta, nodes):
-                pos = geo.pos_quadratic(xi, eta, nodes)
+                pos = geo.quadratic_interp(xi, eta, nodes)
                 X = pos - x_c
                 return np.cross(X, q_vec)
             return omega_quad
@@ -285,7 +285,7 @@ def calc_lp_qe_rot_vel(lin_pot_mesh, quad_geo_mesh, q):
         face_hs = quad_geo_mesh.get_hs(face_num)
         def make_omega_quad(face_num):
             def omega_quad(xi, eta, nodes):
-                pos = geo.pos_linear(xi, eta, nodes)
+                pos = geo.linear_interp(xi, eta, nodes)
                 X = pos - x_c
                 node_0 = pot_faces[face_num, 0]
                 node_1 = pot_faces[face_num, 1]
@@ -329,7 +329,7 @@ def calc_le_Am_vec(lin_geo_mesh):
     for m in range(3):
         def make_am_quad_func(w_m):
             def am_quad(xi, eta, nodes):
-                pos = geo.pos_linear(xi, eta, nodes)
+                pos = geo.linear_interp(xi, eta, nodes)
                 X = pos - x_c
                 return np.dot(np.cross(w_m, X), np.cross(w_m, X))
             return am_quad

@@ -46,6 +46,46 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     return C
 
 
+def make_mat_cp_le_NV(cons_pot_mesh, lin_geo_mesh):
+    """
+    This version uses linear interpolation from analytical normal vectors
+    at the mesh vertices
+    Parameters:
+        cons_pot_mesh: constant potential mesh
+        lin_geo_mesh : linear geometric mesh
+    Returns:
+        the stresslet matrix
+    """
+    print("Using NV version of cp_le")
+    pot_faces = cons_pot_mesh.get_faces()
+    assert pot_faces.shape[0] == lin_geo_mesh.get_faces().shape[0]
+    num_faces = pot_faces.shape[0] # should be same for either pot or geo
+    c_0 = 1. / (4. * np.pi)
+    K = np.zeros((3 * num_faces, 3 * num_faces))
+    for face_num in range(num_faces):
+        face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
+        face_normals = lin_geo_mesh.get_tri_normals(face_num)
+        face_hs = lin_geo_mesh.get_hs(face_num)
+        for src_num in range(num_faces):
+            src_center = cons_pot_mesh.get_node(src_num)
+            if face_num != src_num:
+                sub_mat = gq.int_over_tri_lin(
+                    make_cp_le_NV_quad_func(face_normals, src_center),
+                    face_nodes,
+                    face_hs
+                )
+                K[(3 * src_num):(3 * src_num + 3),
+                  (3 * face_num):(3 * face_num + 3)] += sub_mat
+                K[(3 * src_num):(3 * src_num + 3),
+                  (3 * src_num):(3 * src_num + 3)] -= sub_mat
+            # do nothing face_num == src_num, how it works out for constant elements
+    for src_num in range(num_faces):
+        K[(3 * src_num):(3 * src_num + 3),
+          (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
+    K = np.dot(c_0, K)
+    return K
+
+
 def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
     """
     This version links to C library for speed
@@ -244,7 +284,21 @@ def make_cp_le_quad_func(n, x_0):
         x_0: the source point
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_linear(xi, eta, nodes)
+        x = geo.linear_interp(xi, eta, nodes)
+        return geo.stresslet_n(x, x_0, n)
+    return quad_func
+
+
+def make_cp_le_NV_quad_func(normals, x_0):
+    """
+    This version uses linear intepolation for the normal vector
+    Parameters:
+        normals: 3x3 ndarray of normal vectors at element verticies
+        x_0: the source point
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.linear_interp(xi, eta, nodes)
+        n = geo.linear_interp(xi, eta, normals)
         return geo.stresslet_n(x, x_0, n)
     return quad_func
 
@@ -257,7 +311,7 @@ def make_cp_qe_quad_func(x_0):
         x_0: the source point
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_quadratic(xi, eta, nodes)
+        x = geo.quadratic_interp(xi, eta, nodes)
         return geo.stresslet(x, x_0)
     return quad_func
 
@@ -272,7 +326,7 @@ def make_reg_lp_le_quad_func(n, x_0, node_num):
         node_num: which potential shape function [0, 1, 2]
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_linear(xi, eta, nodes)
+        x = geo.linear_interp(xi, eta, nodes)
         S = geo.stresslet_n(x, x_0, n)
         phi = geo.shape_func_linear(xi, eta, node_num)
         return phi * S
@@ -288,7 +342,7 @@ def make_reg_lp_qe_quad_func(x_0, node_num):
         node_num: which potential shape function [0, 1, 2]
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_quadratic(xi, eta, nodes)
+        x = geo.quadratic_interp(xi, eta, nodes)
         S = geo.stresslet(x, x_0)
         phi = geo.shape_func_linear(xi, eta, node_num)
         return phi * S
@@ -305,7 +359,7 @@ def make_sing_lp_qe_quad_func(x_0, node_num, singular_ind):
         singular_ind: local singular index for a face
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_quadratic(xi, eta, nodes)
+        x = geo.quadratic_interp(xi, eta, nodes)
         phi = geo.shape_func_linear(xi, eta, node_num)
         if node_num == singular_ind:
             if (phi - 1) == 0: # getting around division by 0

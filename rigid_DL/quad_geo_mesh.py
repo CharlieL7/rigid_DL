@@ -24,7 +24,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         """
         self.verts = np.array(x) # (Nv, 3) ndarray
         self.faces = np.array(f) # (Nf, 6) ndarray
-        self.quad_n = self.calc_all_quad_n()
+        self.quad_n = self.calc_all_quad_n() # Note not normalized on purpose
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
         self.centroid = self.calc_mesh_centroid()
@@ -75,7 +75,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Paramters:
             face_num : face number
         Returns:
-            nodes : (6, 3) ndarray of nodes as columns
+            nodes : (6, 3) ndarray of nodes as rows
         """
         face = self.faces[face_num]
         x_0 = self.verts[face[0]]
@@ -98,7 +98,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
             tri_c : (3, ) ndarray for triangle center
         """
         nodes = self.get_tri_nodes(face_num)
-        pt = geo.pos_quadratic(1./3., 1./3., nodes)
+        pt = geo.quadratic_interp(1./3., 1./3., nodes)
         return pt
 
 
@@ -109,7 +109,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Parameters:
             face_num: face number
         Returns:
-            quad_n: (3, 6) ndarray of normal vectors as columns
+            quad_n: (6, 3) ndarray of normal vectors as rows
         """
         return self.quad_n[face_num]
 
@@ -127,7 +127,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Gaussian quadrature
         """
         Nf = self.faces.shape[0]
-        normals = np.empty([Nf, 3, 6])
+        normals = np.empty([Nf, 6, 3])
         for i, face in enumerate(self.faces):
             nodes = self.get_tri_nodes(i)
             normals[i] = gq.quad_n(nodes)
@@ -140,7 +140,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         Gaussian quadrature
         """
         assert self.quad_n.any()
-        return np.linalg.norm(self.quad_n, axis=1)
+        return np.linalg.norm(self.quad_n, axis=2)
 
 
     def flip_n(self):
@@ -153,10 +153,10 @@ class Quad_Geo_Mesh(Geo_Mesh):
             x_c2tri = self.get_tri_center(i) - self.centroid
             normals = self.quad_n[i]
             for j in range(normals.shape[1]): #iterate over 6 normal vectors
-                n = normals[:, j]
+                n = normals[j]
                 if np.dot(n, x_c2tri) < 0.:
                     count += 1
-                    self.quad_n[i][:,j] *= -1.
+                    self.quad_n[i][j] *= -1.
         if count > 0:
             print("flipped {} normal vectors".format(count))
 
@@ -189,7 +189,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
         x_c = np.zeros(3)
         for i, face in enumerate(self.faces):
             nodes = self.get_tri_nodes(i)
-            x_c += gq.int_over_tri_quad(geo.pos_quadratic, nodes, self.quad_hs[i])
+            x_c += gq.int_over_tri_quad(geo.quadratic_interp, nodes, self.quad_hs[i])
         x_c /= self.surf_area
         return x_c
     
@@ -220,21 +220,6 @@ class Quad_Geo_Mesh(Geo_Mesh):
             nodes = self.get_tri_nodes(i)
             inertia_tensor += gq.int_over_tri_quad(geo.inertia_func_quadratic, nodes, self.get_hs(i))
         return inertia_tensor
-
-
-    def fix_mom_inertia(self):
-        """
-        Hardcodes the moment of inertia tensor
-        """
-        self.mom_inertia[0,0] = 29.907607984
-        self.mom_inertia[0,1] = 0.
-        self.mom_inertia[0,2] = 0.
-        self.mom_inertia[1,0] = 0.
-        self.mom_inertia[1,1] = 184.392115678
-        self.mom_inertia[1,2] = 0.
-        self.mom_inertia[2,0] = 0.
-        self.mom_inertia[2,1] = 0.
-        self.mom_inertia[2,2] = 184.392115678
 
 
     def calc_rotation_eig(self):

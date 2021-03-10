@@ -27,7 +27,6 @@ def int_over_tri_lin(func, nodes, hs):
     """
     Integrate a function over a flat triangle surface using Gaussian quadrature.
     Seven point quadrature.
-
     Parameters:
         func: function to integrate, can return any order tensor
                expecting f(xi, eta, nodes)
@@ -48,7 +47,6 @@ def int_over_tri_quad(func, nodes, hs):
     """
     Integrate a function over a curved triangle surface using Gaussian quadrature.
     Seven point quadrature.
-
     Parameters:
         func: function to integrate, can return any order tensor
                expecting f(eta, xi, nodes)
@@ -70,19 +68,18 @@ def int_over_tri_quad_n(func, nodes, n):
     Version that integrates function dotted with an array of normal vectors.
     This is used to minimize number of times normal vector calculation over
     an element is called.
-
     Parameters:
         func: function to integrate, must return (3,3,3) ndarray
                expecting f(eta, xi, nodes)
         nodes: 6x3 ndarray with nodes as row vectors
-        n: normal vectors at the seven quadrature points (3, 6) ndarray
+        n: normal vectors at the seven quadrature points (6, 3) ndarray
             (not normalized vectors, hs magnitude)
     Returns:
         integrated (function . n)
     """
     f = np.empty([3, 3, 6])
     for i, (xi, eta) in enumerate(PARA_PTS):
-        f[:, :, i] = np.dot(func(xi, eta, nodes), n[:, i])
+        f[:, :, i] = np.dot(func(xi, eta, nodes), n[i])
     ret = 0.5 * np.dot(f, W)
     return ret
 
@@ -91,18 +88,31 @@ def quad_n(nodes):
     """
     Calculate the normal vector values over a curved triangle for six point Gaussian quadrature.
     This function is use to reduce the number of times these values are recalculated.
-
     Parameters:
         nodes: 6x3 ndarray with nodes as row vectors
     Returns:
-        normals: (3, 6) ndarray
+        normals: (6, 3) ndarray
     """
-    normals = np.empty([3, 6])
+    normals = np.empty([6, 3])
     for i, (xi, eta) in enumerate(PARA_PTS):
         e_xi = np.einsum("ij,j->i", np.transpose(nodes), geo.dphi_dxi_quadratic(xi, eta, nodes))
         e_eta = np.einsum("ij,j->i", np.transpose(nodes), geo.dphi_deta_quadratic(xi, eta, nodes))
         n = np.cross(e_xi, e_eta)
-        normals[:, i] = n
+        normals[i] = n
+    return normals
+
+
+def quad_n_NV(node_normals):
+    """
+    Version that uses quadratic interpolation of the normal vectors to get the
+    Gaussian quadrature evaluation points
+    Parameters:
+        node_normals: 6x3 ndarray with nodes as row vectors
+    """
+    normals = np.empty([6, 3])
+    for i, (xi, eta) in enumerate(PARA_PTS):
+        n = geo.quadratic_interp(xi, eta, node_normals)
+        normals[i] = n
     return normals
 
 

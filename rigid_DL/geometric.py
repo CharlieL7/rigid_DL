@@ -8,7 +8,7 @@ LC_3[0, 1, 2] = LC_3[1, 2, 0] = LC_3[2, 0, 1] = 1.
 LC_3[0, 2, 1] = LC_3[1, 0, 2] = LC_3[2, 1, 0] = -1.
 
 
-def pos_linear(xi, eta, nodes):
+def linear_interp(xi, eta, nodes):
     """
     position in a flat, 3 node triangle as a function of eta and xi
 
@@ -23,7 +23,7 @@ def pos_linear(xi, eta, nodes):
     return x
 
 
-def pos_quadratic(xi, eta, nodes):
+def quadratic_interp(xi, eta, nodes):
     """
     position in a curved 6 node triangle as a function of eta and xi
 
@@ -190,7 +190,7 @@ def inertia_func_linear(xi, eta, nodes):
     """
     inertia function for input into int_over_tri_linear()
     """
-    x = pos_linear(xi, eta, nodes)
+    x = linear_interp(xi, eta, nodes)
     return np.dot(x, x) * np.identity(3) - np.outer(x, x)
 
 
@@ -198,7 +198,7 @@ def inertia_func_quadratic(xi, eta, nodes):
     """
     inertia function for input into int_over_tri_quadratic()
     """
-    x = pos_quadratic(xi, eta, nodes)
+    x = quadratic_interp(xi, eta, nodes)
     return np.dot(x, x) * np.identity(3) - np.outer(x, x)
 
 
@@ -312,7 +312,7 @@ def dphi_deta_quadratic_alt(xi, eta, nodes):
     return dphi_deta
 
 
-def pos_quadratic_alt(xi, eta, nodes):
+def quadratic_interp_alt(xi, eta, nodes):
     """
     position in a curved 6 node triangle as a function of eta and xi
 

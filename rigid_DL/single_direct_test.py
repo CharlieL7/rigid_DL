@@ -6,6 +6,7 @@ import numpy as np
 import meshio
 import csv
 from rigid_DL import lin_geo_mesh, quad_geo_mesh, cons_pot_mesh, lin_pot_mesh
+from rigid_DL import lin_geo_mesh_NV
 import rigid_DL.mat_assembly as mata
 import rigid_DL.eigenfunctions as eigfuns
 import rigid_DL.eigenvalues as eigvals
@@ -48,7 +49,7 @@ def main():
             break
 
     if mesh_type == Mesh_Type.LINEAR:
-        geo_mesh = lin_geo_mesh.Lin_Geo_Mesh(verts, faces)
+        geo_mesh = lin_geo_mesh_NV.Lin_Geo_Mesh(verts, faces)
     elif mesh_type == Mesh_Type.QUADRATIC:
         geo_mesh = quad_geo_mesh.Quad_Geo_Mesh(verts, faces)
 

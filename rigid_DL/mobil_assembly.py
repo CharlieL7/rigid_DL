@@ -85,7 +85,7 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
         face_hs = lin_geo_mesh.get_hs(face_num)
         v_sub_mat = (1. / S_D) * (np.identity(3) * 0.5 * face_hs) # simple integral
         def omega_quad(xi, eta, nodes):
-            pos = geo.pos_linear(xi, eta, nodes)
+            pos = geo.linear_interp(xi, eta, nodes)
             X = pos - x_c
             return np.einsum("lrs,s->lr", geo.LC_3, X)
         tmp_omega = gq.int_over_tri_lin(
@@ -136,7 +136,7 @@ def add_cp_le_RBM_terms_alt(K, cons_pot_mesh, lin_geo_mesh):
         for m in range(3):
             def make_omega_quad(w, A_m):
                 def omega_quad(xi, eta, nodes):
-                    pos = geo.pos_linear(xi, eta, nodes)
+                    pos = geo.linear_interp(xi, eta, nodes)
                     X = pos - x_c
                     return np.cross(w, X)
                 return omega_quad
@@ -284,7 +284,7 @@ def make_DL_cp_le_quad_func(n, x_0):
         x_0: the source point
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_linear(xi, eta, nodes)
+        x = geo.linear_interp(xi, eta, nodes)
         return geo.stresslet_n(x, x_0, n)
     return quad_func
 
@@ -421,7 +421,7 @@ def make_DL_reg_lp_le_quad_func(n, x_0, node_num):
         node_num: which potential shape function [0, 1, 2]
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_linear(xi, eta, nodes)
+        x = geo.linear_interp(xi, eta, nodes)
         S = geo.stresslet_n(x, x_0, n)
         phi = geo.shape_func_linear(xi, eta, node_num)
         return phi * S
@@ -437,7 +437,7 @@ def make_lp_le_v_quad(node_num):
 
 def make_lp_le_omega_quad(node_num, x_c):
     def omega_quad(xi, eta, nodes):
-        pos = geo.pos_linear(xi, eta, nodes)
+        pos = geo.linear_interp(xi, eta, nodes)
         X = pos - x_c
         phi = geo.shape_func_linear(xi, eta, node_num)
         return phi * np.einsum("lrs,r", geo.LC_3, X)
@@ -511,7 +511,7 @@ def make_cp_qe_quad_func(x_0):
         x_0: the source point
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_quadratic(xi, eta, nodes)
+        x = geo.quadratic_interp(xi, eta, nodes)
         return geo.stresslet(x, x_0)
     return quad_func
 
@@ -540,7 +540,7 @@ def add_cp_qe_RBM_terms(K, cons_pot_mesh, quad_geo_mesh):
             return np.identity(3)
         v_sub_mat = (1. / S_D) * gq.int_over_tri_quad(v_quad, face_nodes, face_hs)
         def omega_quad(xi, eta, nodes):
-            pos = geo.pos_quadratic(xi, eta, nodes)
+            pos = geo.quadratic_interp(xi, eta, nodes)
             X = pos - x_c
             return np.einsum("lrs,s->lr", geo.LC_3, X)
         tmp_omega = gq.int_over_tri_quad(
@@ -656,7 +656,7 @@ def make_reg_lp_qe_quad_func(x_0, node_num):
         node_num: which potential shape function [0, 1, 2]
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_quadratic(xi, eta, nodes)
+        x = geo.quadratic_interp(xi, eta, nodes)
         S = geo.stresslet(x, x_0)
         phi = geo.shape_func_linear(xi, eta, node_num)
         return phi * S
@@ -673,7 +673,7 @@ def make_sing_lp_qe_quad_func(x_0, node_num, singular_ind):
         singular_ind: local singular index for a face
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_quadratic(xi, eta, nodes)
+        x = geo.quadratic_interp(xi, eta, nodes)
         phi = geo.shape_func_linear(xi, eta, node_num)
         if node_num == singular_ind:
             if (phi - 1) == 0: # getting around division by 0

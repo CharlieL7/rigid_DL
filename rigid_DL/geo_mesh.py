@@ -32,7 +32,7 @@ class Geo_Mesh(ABC):
 
 
     @abstractmethod
-    def get_tri_center(self, face):
+    def get_tri_center(self, face_num):
         pass
 
 

@@ -163,7 +163,7 @@ def make_lin_psi_func(E_d, E_c):
     Makes the eigenvector function to integrate over the surface
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_linear(xi, eta, nodes)
+        x = geo.linear_interp(xi, eta, nodes)
         return np.linalg.norm(np.dot(E_d, x) - np.cross(E_c, x))
     return quad_func
 
@@ -173,6 +173,6 @@ def make_quad_psi_func(E_d, E_c):
     Makes the eigenvector function to integrate over the surface
     """
     def quad_func(xi, eta, nodes):
-        x = geo.pos_quadratic(xi, eta, nodes)
+        x = geo.quadratic_interp(xi, eta, nodes)
         return np.linalg.norm(np.dot(E_d, x) - np.cross(E_c, x))
     return quad_func

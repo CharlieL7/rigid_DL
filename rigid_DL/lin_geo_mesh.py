@@ -28,7 +28,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.centroid = self.calc_mesh_centroid()
         self.normalize_n() # normal vectors normalized
         self.mom_inertia = self.calc_moment_inertia_tensor()
-        self.fix_mom_inertia()
         self.dims = self.calc_ellip_dims()
         self.volume = self.calc_volume()
         (self.w, self.A_m) = self.calc_rotation_eig()
@@ -81,7 +80,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
             tri_c : (3, ) ndarray for triangle center
         """
         nodes = self.get_tri_nodes(face_num)
-        pt = geo.pos_linear(1/3., 1/3., nodes)
+        pt = geo.linear_interp(1/3., 1/3., nodes)
         return pt
 
 
@@ -167,7 +166,7 @@ class Lin_Geo_Mesh(Geo_Mesh):
         x_c = np.zeros(3)
         for i, face in enumerate(self.faces):
             nodes = self.get_tri_nodes(i)
-            x_c += gq.int_over_tri_lin(geo.pos_linear, nodes, self.hs[i])
+            x_c += gq.int_over_tri_lin(geo.linear_interp, nodes, self.hs[i])
         x_c /= self.surf_area
         return x_c
 
@@ -182,21 +181,6 @@ class Lin_Geo_Mesh(Geo_Mesh):
             nodes = self.get_tri_nodes(i)
             inertia_tensor += gq.int_over_tri_lin(geo.inertia_func_linear, nodes, self.hs[i])
         return inertia_tensor
-
-
-    def fix_mom_inertia(self):
-        """
-        Hardcodes the moment of inertia tensor
-        """
-        self.mom_inertia[0,0] = 29.907607984
-        self.mom_inertia[0,1] = 0.
-        self.mom_inertia[0,2] = 0.
-        self.mom_inertia[1,0] = 0.
-        self.mom_inertia[1,1] = 184.392115678
-        self.mom_inertia[1,2] = 0.
-        self.mom_inertia[2,0] = 0.
-        self.mom_inertia[2,1] = 0.
-        self.mom_inertia[2,2] = 184.392115678
 
 
     def calc_moment_inertia_tensor_alt(self):

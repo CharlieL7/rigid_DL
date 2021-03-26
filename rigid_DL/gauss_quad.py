@@ -63,7 +63,7 @@ def int_over_tri_quad(func, nodes, hs):
     return ret
 
 
-def int_over_tri_quad_n(func, nodes, n):
+def int_over_tri_quad_n(func, nodes, n, hs):
     """
     Version that integrates function dotted with an array of normal vectors.
     This is used to minimize number of times normal vector calculation over
@@ -72,14 +72,14 @@ def int_over_tri_quad_n(func, nodes, n):
         func: function to integrate, must return (3,3,3) ndarray
                expecting f(eta, xi, nodes)
         nodes: 6x3 ndarray with nodes as row vectors
-        n: normal vectors at the seven quadrature points (6, 3) ndarray
-            (not normalized vectors, hs magnitude)
+        n: normal vectors at the six quadrature points (6, 3) ndarray (normalized)
+        hs: areas at the six quadrature points
     Returns:
         integrated (function . n)
     """
     f = np.empty([3, 3, 6])
     for i, (xi, eta) in enumerate(PARA_PTS):
-        f[:, :, i] = np.dot(func(xi, eta, nodes), n[i])
+        f[:, :, i] = np.dot(func(xi, eta, nodes), n[i]) * hs[i]
     ret = 0.5 * np.dot(f, W)
     return ret
 
@@ -107,12 +107,11 @@ def quad_n_NV(node_normals):
     Version that uses quadratic interpolation of the normal vectors to get the
     Gaussian quadrature evaluation points
     Parameters:
-        node_normals: 6x3 ndarray with nodes as row vectors
+        node_normals: 6x3 ndarray with normal vectors as row vectors
     """
     normals = np.empty([6, 3])
     for i, (xi, eta) in enumerate(PARA_PTS):
-        n = geo.quadratic_interp(xi, eta, node_normals)
-        normals[i] = n
+        normals[i] =  geo.quadratic_interp(xi, eta, node_normals)
     return normals
 
 

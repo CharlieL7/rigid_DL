@@ -29,7 +29,7 @@ class Lin_Pot_Mesh(Pot_Mesh):
     @classmethod
     def make_from_lin_geo_mesh(cls, lin_geo_mesh):
         """
-        Makes the linear poential mesh from the given lin geometric mesh.
+        Makes the linear poential mesh from the given linear geometric mesh.
         Just uses the geometric nodes directly.
 
         Parameters:

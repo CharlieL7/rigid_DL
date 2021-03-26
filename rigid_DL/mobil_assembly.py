@@ -77,8 +77,6 @@ def add_cp_le_RBM_terms(K, cons_pot_mesh, lin_geo_mesh):
     w = lin_geo_mesh.get_w()
     A_m = lin_geo_mesh.get_A_m()
     S_D = lin_geo_mesh.get_surface_area()
-    print("A_m")
-    print(A_m)
 
     for face_num in range(num_faces):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
@@ -256,7 +254,7 @@ def make_forcing_vec(pot_mesh, geo_mesh, u_d, f, l, mu):
     num_nodes = pot_nodes.shape[0]
 
     x_c = geo_mesh.get_centroid()
-    c_0 = 1. / (4. * np.pi)
+    c_0 = -1. / (4. * np.pi)
 
     # make Power and Miranda supplementary flow vector
     f_s = f / (-8. * np.pi * mu) # the script F seen in Pozrikidis
@@ -269,8 +267,7 @@ def make_forcing_vec(pot_mesh, geo_mesh, u_d, f, l, mu):
         ) + np.einsum(
             "il,l->i", geo.rotlet(node, x_c), l_s
         )
-    fv = c_0 * (-u_d - v_s) # script C term from Pozrikidis
-    # sign error ?
+    fv = c_0 * (u_d - v_s) # script C term from Pozrikidis
     return fv
 
 
@@ -483,13 +480,15 @@ def add_cp_qe_DL_terms(K, cons_pot_mesh, quad_geo_mesh):
     for face_num in range(num_faces): # field points
         face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
         face_n = quad_geo_mesh.get_quad_n(face_num)
+        face_hs = quad_geo_mesh.get_hs(face_num)
         for src_num in range(num_faces): # source points
             src_center = cons_pot_mesh.get_node(src_num)
             if face_num != src_num:
                 sub_mat = gq.int_over_tri_quad_n(
                     make_cp_qe_quad_func(src_center),
                     face_nodes,
-                    face_n
+                    face_n,
+                    face_hs
                 )
                 K[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
@@ -602,7 +601,8 @@ def add_lp_qe_DL_terms(K, lin_pot_mesh, quad_geo_mesh):
 
     for face_num in range(num_faces): # integrate over faces
         face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
-        face_n = quad_geo_mesh.quad_n[face_num]
+        face_n = quad_geo_mesh.get_quad_n(face_num)
+        face_hs = quad_geo_mesh.get_hs(face_num)
         for src_num in range(num_nodes): # source points
             src_pt = lin_pot_mesh.get_node(src_num)
             is_singular, local_singular_ind = lin_pot_mesh.check_in_face(src_num, face_num)
@@ -615,7 +615,8 @@ def add_lp_qe_DL_terms(K, lin_pot_mesh, quad_geo_mesh):
                             src_pt, node_num, local_singular_ind
                             ),
                         face_nodes,
-                        face_n
+                        face_n,
+                        face_hs,
                     )
                     K[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
@@ -626,7 +627,8 @@ def add_lp_qe_DL_terms(K, lin_pot_mesh, quad_geo_mesh):
                     sub_mat = gq.int_over_tri_quad_n(
                         make_reg_lp_qe_quad_func(src_pt, node_num),
                         face_nodes,
-                        face_n
+                        face_n,
+                        face_hs,
                     )
                     K[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
@@ -634,7 +636,8 @@ def add_lp_qe_DL_terms(K, lin_pot_mesh, quad_geo_mesh):
                 sub_mat = gq.int_over_tri_quad_n(
                     make_cp_qe_quad_func(src_pt),
                     face_nodes,
-                    face_n
+                    face_n,
+                    face_hs,
                 )
                 K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
 

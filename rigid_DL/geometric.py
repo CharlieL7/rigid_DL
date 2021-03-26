@@ -211,7 +211,7 @@ def const_func(xi, eta, nodes):
 
 def shape_func_linear(xi, eta, num):
     """
-    shape functions for linear elements
+    linear interpolation function
     """
     if num == 0:
         return 1 - xi - eta
@@ -220,7 +220,24 @@ def shape_func_linear(xi, eta, num):
     elif num == 2:
         return eta
     else:
-        sys.exit("failure on shape_func(), unexpected num")
+        sys.exit("failure on shape_func_linear(), unexpected num")
+
+
+def shape_func_quadratic(xi, eta, nodes, num):
+    """
+    quadratic interpolation function
+    """
+    alpha, beta, gamma = calc_abg(nodes)
+    phi = np.array([
+        0.,
+        (1. / (1. - alpha)) * xi * (xi - alpha + ((alpha - gamma) / (1. - gamma)) * eta),
+        (1. / (1. - beta)) * eta * (eta - beta + ((beta + gamma - 1.) / (gamma)) * xi),
+        1. / (alpha * (1. - alpha)) * xi * (1. - xi - eta),
+        1. / (gamma * (1. - gamma)) * xi * eta,
+        1. / (beta * (1. - beta)) * eta * (1. - xi - eta),
+        ])
+    phi[0] = 1. - np.sum(phi)
+    return phi[num]
 
 
 def cart2sph(vec):

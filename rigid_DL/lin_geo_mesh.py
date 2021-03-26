@@ -31,12 +31,10 @@ class Lin_Geo_Mesh(Geo_Mesh):
         self.dims = self.calc_ellip_dims()
         self.volume = self.calc_volume()
         (self.w, self.A_m) = self.calc_rotation_eig()
-        print("Surface area:")
-        print(self.surf_area)
-        print("Volume:")
-        print(self.volume)
-        print("Moment of inertia:")
-        print(self.mom_inertia)
+        #print("Surface area:")
+        #print(self.surf_area)
+        #print("Moment of inertia:")
+        #print(self.mom_inertia)
 
 
     def get_verts(self):
@@ -256,11 +254,9 @@ class Lin_Geo_Mesh(Geo_Mesh):
         Be careful of sphere case when this basis is no longer orthogonal.
         """
         eig_vals, eig_vecs = np.linalg.eig(self.mom_inertia)
-        """
         idx = eig_vals.argsort()
         eig_vals = eig_vals[idx]
         eig_vecs = eig_vecs[:, idx]
-        """
         w = eig_vecs.T
         return (w, eig_vals)
 

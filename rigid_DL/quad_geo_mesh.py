@@ -24,12 +24,12 @@ class Quad_Geo_Mesh(Geo_Mesh):
         """
         self.verts = np.array(x) # (Nv, 3) ndarray
         self.faces = np.array(f) # (Nf, 6) ndarray
-        self.quad_n = self.calc_all_quad_n() # Note not normalized on purpose
+        self.quad_n = self.calc_all_quad_n() # still needs normalization
         self.quad_hs = self.calc_all_quad_hs()
         self.surf_area = self.calc_surf_area()
         self.centroid = self.calc_mesh_centroid()
         self.center_mesh()
-        self.flip_n()
+        self.normalize_flip_n()
         self.mom_inertia = self.calc_moment_inertia_tensor()
         (self.w, self.A_m) = self.calc_rotation_eig() #w is 3 ROWS of eigenvectors
         print("Surface area:")
@@ -124,7 +124,7 @@ class Quad_Geo_Mesh(Geo_Mesh):
     def calc_all_quad_n(self):
         """
         Calculates all of the normal vector values that will be used for six point
-        Gaussian quadrature
+        Gaussian quadrature, not normalized
         """
         Nf = self.faces.shape[0]
         normals = np.empty([Nf, 6, 3])
@@ -143,11 +143,14 @@ class Quad_Geo_Mesh(Geo_Mesh):
         return np.linalg.norm(self.quad_n, axis=2)
 
 
-    def flip_n(self):
+    def normalize_flip_n(self):
         """
+        Normalizes normal vectors
         Checks the orientation of the normals and reorients them to point
         outwards from the mesh if required.
         """
+        tmp = np.divide(self.quad_n, self.quad_hs[:, :, np.newaxis])
+        self.quad_n = tmp
         count = 0
         for i, face in enumerate(self.faces):
             x_c2tri = self.get_tri_center(i) - self.centroid

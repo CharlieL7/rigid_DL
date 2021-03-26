@@ -21,7 +21,7 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     assert pot_faces.shape[0] == lin_geo_mesh.get_faces().shape[0]
     num_faces = pot_faces.shape[0] # should be same for either pot or geo
     c_0 = 1. / (4. * np.pi)
-    C = np.zeros((3 * num_faces, 3 * num_faces))
+    K = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces):
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
         face_n = lin_geo_mesh.get_normal(face_num)
@@ -34,38 +34,37 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
                     face_nodes,
                     face_hs
                 )
-                C[(3 * src_num):(3 * src_num + 3),
+                K[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
-                C[(3 * src_num):(3 * src_num + 3),
+                K[(3 * src_num):(3 * src_num + 3),
                   (3 * src_num):(3 * src_num + 3)] -= sub_mat
             # do nothing face_num == src_num, how it works out for constant elements
     for src_num in range(num_faces):
-        C[(3 * src_num):(3 * src_num + 3),
+        K[(3 * src_num):(3 * src_num + 3),
           (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
-    C = np.dot(c_0, C)
-    return C
+    K = np.dot(c_0, K)
+    return K
 
 
-def make_mat_cp_le_NV(cons_pot_mesh, lin_geo_mesh):
+def make_mat_cp_le_NV(cons_pot_mesh, lin_geo_mesh_NV):
     """
     This version uses linear interpolation from analytical normal vectors
     at the mesh vertices
     Parameters:
         cons_pot_mesh: constant potential mesh
-        lin_geo_mesh : linear geometric mesh
+        lin_geo_mesh_NV : linear geometric mesh using interpolated normal vectors
     Returns:
         the stresslet matrix
     """
-    print("Using NV version of cp_le")
     pot_faces = cons_pot_mesh.get_faces()
-    assert pot_faces.shape[0] == lin_geo_mesh.get_faces().shape[0]
+    assert pot_faces.shape[0] == lin_geo_mesh_NV.get_faces().shape[0]
     num_faces = pot_faces.shape[0] # should be same for either pot or geo
     c_0 = 1. / (4. * np.pi)
     K = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces):
-        face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
-        face_normals = lin_geo_mesh.get_tri_normals(face_num)
-        face_hs = lin_geo_mesh.get_hs(face_num)
+        face_nodes = lin_geo_mesh_NV.get_tri_nodes(face_num)
+        face_normals = lin_geo_mesh_NV.get_tri_normals(face_num)
+        face_hs = lin_geo_mesh_NV.get_hs(face_num)
         for src_num in range(num_faces):
             src_center = cons_pot_mesh.get_node(src_num)
             if face_num != src_num:
@@ -114,8 +113,7 @@ def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
 
 def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
     """
-    Makes the stiffness matrix using closed surface singularity subtraction.
-    For linear potentials over a linear elements.
+    Version that uses linear interpolation for normal vector
     Parameters:
         lin_pot_mesh: linear potential mesh
         lin_geo_mesh : linear geometric mesh
@@ -129,7 +127,7 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
     pot_nodes = lin_pot_mesh.get_nodes()
     num_nodes = pot_nodes.shape[0]
     c_0 = 1. / (4. * np.pi)
-    C = np.zeros((3 * num_nodes, 3 * num_nodes))
+    K = np.zeros((3 * num_nodes, 3 * num_nodes))
 
     for face_num in range(num_faces): # integrate over faces
         face_nodes = lin_geo_mesh.get_tri_nodes(face_num)
@@ -148,7 +146,7 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
                         face_nodes,
                         face_hs
                     )
-                    C[(3 * src_num):(3 * src_num + 3),
+                    K[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += c_0 * sub_mat
                 # subtracting the q(x_0) term
                 sub_mat = gq.int_over_tri_lin(
@@ -156,16 +154,83 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
                     face_nodes,
                     face_hs
                 )
-                C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * sub_mat
+                K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * sub_mat
             # always evaluates to zero for singular flat triangles
             # from \hat{x} vector being orthogonal to normal vector
 
     for src_num in range(num_nodes): # source points
         # whole surface q(x_0) term
-        C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * (
+        K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * (
             4. * np.pi * np.identity(3)
         )
-    return C
+    return K
+
+
+
+def make_mat_lp_le_NV(lin_pot_mesh, lin_geo_mesh_NV):
+    """
+    Makes the stiffness matrix using closed surface singularity subtraction.
+    For linear potentials over a linear elements.
+    Parameters:
+        lin_pot_mesh: linear potential mesh
+        lin_geo_mesh_NV : linear geometric mesh using interpolated normal vectors
+    Returns:
+        the stresslet matrix
+    """
+    geo_faces = lin_geo_mesh_NV.get_faces()
+    pot_faces = lin_pot_mesh.get_faces()
+    assert geo_faces.shape[0] == pot_faces.shape[0]
+    num_faces = geo_faces.shape[0]
+    pot_nodes = lin_pot_mesh.get_nodes()
+    num_nodes = pot_nodes.shape[0]
+    c_0 = 1. / (4. * np.pi)
+    K = np.zeros((3 * num_nodes, 3 * num_nodes))
+
+    for face_num in range(num_faces): # integrate over faces
+        face_nodes = lin_geo_mesh_NV.get_tri_nodes(face_num)
+        face_normals = lin_geo_mesh_NV.get_tri_normals(face_num)
+        face_hs = lin_geo_mesh_NV.get_hs(face_num)
+        for src_num in range(num_nodes): # source points
+            src_pt = pot_nodes[src_num]
+            is_singular, local_singular_ind = lin_pot_mesh.check_in_face(src_num, face_num)
+            if not is_singular: # regular triangle
+                for node_num in range(3):
+                    node_global_num = pot_faces[face_num, node_num] # global index for vert
+                    sub_mat = gq.int_over_tri_lin(
+                        make_reg_lp_le_NV_quad_func(
+                            face_normals, src_pt, node_num
+                        ),
+                        face_nodes,
+                        face_hs
+                    )
+                    K[(3 * src_num):(3 * src_num + 3),
+                      (3 * node_global_num):(3 * node_global_num + 3)] += c_0 * sub_mat
+                # subtracting the q(x_0) term
+                sub_mat = gq.int_over_tri_lin(
+                    make_cp_le_NV_quad_func(face_normals, src_pt),
+                    face_nodes,
+                    face_hs
+                )
+                K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * sub_mat
+            else: # singular triangle
+                for node_num in range(3):
+                    node_global_num = pot_faces[face_num, node_num] # global index for vert
+                    sub_mat = gq.int_over_tri_lin(
+                        make_sing_lp_le_NV_quad_func(
+                            face_normals, src_pt, node_num, local_singular_ind
+                        ),
+                        face_nodes,
+                        face_hs
+                    )
+                    K[(3 * src_num):(3 * src_num + 3),
+                      (3 * node_global_num):(3 * node_global_num + 3)] += c_0 * sub_mat
+
+    for src_num in range(num_nodes): # source points
+        # whole surface q(x_0) term
+        K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * (
+            4. * np.pi * np.identity(3)
+        )
+    return K
 
 
 def make_mat_cp_qe(cons_pot_mesh, quad_geo_mesh):
@@ -183,29 +248,31 @@ def make_mat_cp_qe(cons_pot_mesh, quad_geo_mesh):
     assert geo_faces.shape[0] == pot_faces.shape[0]
     num_faces = geo_faces.shape[0]
     c_0 = 1. / (4. * np.pi)
-    C = np.zeros((3 * num_faces, 3 * num_faces))
+    K = np.zeros((3 * num_faces, 3 * num_faces))
     for face_num in range(num_faces): # field points
         face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
         face_n = quad_geo_mesh.get_quad_n(face_num)
+        face_hs = quad_geo_mesh.get_hs(face_num)
         for src_num in range(num_faces): # source points
             src_center = cons_pot_mesh.get_node(src_num)
             if face_num != src_num:
                 sub_mat = gq.int_over_tri_quad_n(
                     make_cp_qe_quad_func(src_center),
                     face_nodes,
-                    face_n
+                    face_n,
+                    face_hs,
                 )
-                C[(3 * src_num):(3 * src_num + 3),
+                K[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
-                C[(3 * src_num):(3 * src_num + 3),
+                K[(3 * src_num):(3 * src_num + 3),
                   (3 * src_num):(3 * src_num + 3)] -= sub_mat
             # do nothing face_num == src_num, how it works out for constant elements
 
     for src_num in range(num_faces):
-        C[(3 * src_num):(3 * src_num + 3),
+        K[(3 * src_num):(3 * src_num + 3),
           (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
-    C = np.dot(c_0, C)
-    return C
+    K = np.dot(c_0, K)
+    return K
 
 
 def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
@@ -225,11 +292,12 @@ def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
     pot_nodes = lin_pot_mesh.get_nodes()
     num_nodes = pot_nodes.shape[0]
     c_0 = 1. / (4. * np.pi)
-    C = np.zeros((3 * num_nodes, 3 * num_nodes))
+    K = np.zeros((3 * num_nodes, 3 * num_nodes))
 
     for face_num in range(num_faces): # integrate over faces
         face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
-        face_n = quad_geo_mesh.quad_n[face_num]
+        face_n = quad_geo_mesh.get_quad_n(face_num)
+        face_hs = quad_geo_mesh.get_hs(face_num)
         for src_num in range(num_nodes): # source points
             src_pt = lin_pot_mesh.get_node(src_num)
             is_singular, local_singular_ind = lin_pot_mesh.check_in_face(src_num, face_num)
@@ -242,9 +310,10 @@ def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
                             src_pt, node_num, local_singular_ind
                             ),
                         face_nodes,
-                        face_n
+                        face_n,
+                        face_hs,
                     )
-                    C[(3 * src_num):(3 * src_num + 3),
+                    K[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
 
             else: # regular triangle
@@ -253,26 +322,99 @@ def make_mat_lp_qe(lin_pot_mesh, quad_geo_mesh):
                     sub_mat = gq.int_over_tri_quad_n(
                         make_reg_lp_qe_quad_func(src_pt, node_num),
                         face_nodes,
-                        face_n
+                        face_n,
+                        face_hs,
                     )
-                    C[(3 * src_num):(3 * src_num + 3),
+                    K[(3 * src_num):(3 * src_num + 3),
                       (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
                 # subtracting the q(x_0) term
                 sub_mat = gq.int_over_tri_quad_n(
                     make_cp_qe_quad_func(src_pt),
                     face_nodes,
-                    face_n
+                    face_n,
+                    face_hs,
                 )
-                C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
+                K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
 
     for src_num in range(num_nodes): # source points
         # whole surface q(x_0) term
-        C[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= (
+        K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= (
             4. * np.pi * np.identity(3)
         )
 
-    C = np.dot(c_0, C)
-    return C
+    K = np.dot(c_0, K)
+    return K
+
+
+def make_mat_qp_qe(quad_pot_mesh, quad_geo_mesh):
+    """
+    Makes the stiffness matrix using closed surface singularity subtraction.
+    For linear potentials over quadratic elements.
+    Parameters:
+        quad_pot_mesh: quadratic potential mesh
+        quad_geo_mesh: quadratic geometric mesh
+    Returns:
+        the stresslet matrix
+    """
+    geo_faces = quad_geo_mesh.get_faces()
+    pot_faces = quad_pot_mesh.get_faces()
+    assert geo_faces.shape[0] == pot_faces.shape[0]
+    num_faces = geo_faces.shape[0]
+    pot_nodes = quad_pot_mesh.get_nodes()
+    num_nodes = pot_nodes.shape[0]
+    c_0 = 1. / (4. * np.pi)
+    K = np.zeros((3 * num_nodes, 3 * num_nodes))
+
+    for face_num in range(num_faces): # integrate over faces
+        face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
+        face_n = quad_geo_mesh.get_quad_n(face_num)
+        face_hs = quad_geo_mesh.get_hs(face_num)
+        for src_num in range(num_nodes): # source points
+            src_pt = quad_pot_mesh.get_node(src_num)
+            is_singular, local_singular_ind = quad_pot_mesh.check_in_face(src_num, face_num)
+
+            if is_singular: # singular triangle
+                for node_num in range(6):
+                    node_global_num = pot_faces[face_num, node_num] # global index for vert
+                    sub_mat = gq.int_over_tri_quad_n(
+                        make_sing_lp_qe_quad_func(
+                            src_pt, node_num, local_singular_ind
+                            ),
+                        face_nodes,
+                        face_n,
+                        face_hs,
+                    )
+                    K[(3 * src_num):(3 * src_num + 3),
+                      (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
+
+            else: # regular triangle
+                for node_num in range(6):
+                    node_global_num = pot_faces[face_num, node_num] # global index for vert
+                    sub_mat = gq.int_over_tri_quad_n(
+                        make_reg_lp_qe_quad_func(src_pt, node_num),
+                        face_nodes,
+                        face_n,
+                        face_hs,
+                    )
+                    K[(3 * src_num):(3 * src_num + 3),
+                      (3 * node_global_num):(3 * node_global_num + 3)] += sub_mat
+                # subtracting the q(x_0) term
+                sub_mat = gq.int_over_tri_quad_n(
+                    make_cp_qe_quad_func(src_pt),
+                    face_nodes,
+                    face_n,
+                    face_hs,
+                )
+                K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= sub_mat
+
+    for src_num in range(num_nodes): # source points
+        # whole surface q(x_0) term
+        K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= (
+            4. * np.pi * np.identity(3)
+        )
+
+    K = np.dot(c_0, K)
+    return K
 
 
 def make_cp_le_quad_func(n, x_0):
@@ -293,7 +435,7 @@ def make_cp_le_NV_quad_func(normals, x_0):
     """
     This version uses linear intepolation for the normal vector
     Parameters:
-        normals: 3x3 ndarray of normal vectors at element verticies
+        normals: (3,3) ndarray of normal vectors at element verticies
         x_0: the source point
     """
     def quad_func(xi, eta, nodes):
@@ -333,6 +475,54 @@ def make_reg_lp_le_quad_func(n, x_0, node_num):
     return quad_func
 
 
+def make_reg_lp_le_NV_quad_func(normals, x_0, node_num):
+    """
+    This version for using linear interpolated normal vector
+    Parameters:
+        normals: (3,3) ndarray of normal vectors at element veritices as rows
+        x_0: source point
+        node_num: which potential shape function [0, 1, 2]
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.linear_interp(xi, eta, nodes)
+        n = geo.linear_interp(xi, eta, normals)
+        S = geo.stresslet_n(x, x_0, n)
+        phi = geo.shape_func_linear(xi, eta, node_num)
+        return phi * S
+    return quad_func
+
+
+def make_sing_lp_le_NV_quad_func(normals, x_0, node_num, singular_ind):
+    """
+    Normal vector will be linearly interpolated, therefore singular
+    elements can be non-zero now
+    Parameters:
+        normals: (3,3) ndarray of normal vectors at element vertices as rows
+        x_0: source point
+        node_num: which potential shape function [0, 1, 2]
+        singular_ind: local singular index
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.linear_interp(xi, eta, nodes)
+        n = geo.linear_interp(xi, eta, normals)
+        phi = geo.shape_func_linear(xi, eta, node_num)
+        if node_num == singular_ind:
+            if (phi - 1) == 0: # getting around division by 0
+                return np.zeros([3, 3])
+            else:
+                if np.linalg.norm(x - x_0) < 1e-6:
+                    print("nearly singular lp_le_NV x_hat error")
+                return (phi - 1) * geo.stresslet_n(x, x_0, n)
+        else:
+            if phi == 0:
+                return np.zeros([3, 3])
+            else:
+                if np.linalg.norm(x - x_0) < 1e-6:
+                    print("nearly singular lp_le_NV x_hat error")
+                return (phi) * geo.stresslet_n(x, x_0, n)
+    return quad_func
+
+
 def make_reg_lp_qe_quad_func(x_0, node_num):
     """
     Makes the regular (non-singular) linear potential, quadratic element function
@@ -366,13 +556,58 @@ def make_sing_lp_qe_quad_func(x_0, node_num, singular_ind):
                 return np.zeros([3, 3, 3])
             else:
                 if np.linalg.norm(x - x_0) < 1e-6:
-                    print("nearly singular lp qe x_hat error")
+                    print("nearly singular lp_qe x_hat error")
                 return (phi - 1) * geo.stresslet(x, x_0)
         else:
             if phi == 0:
                 return np.zeros([3, 3, 3])
             else:
                 if np.linalg.norm(x - x_0) < 1e-6:
-                    print("nearly singular lp qe x_hat error")
+                    print("nearly singular lp_qe x_hat error")
+                return (phi) * geo.stresslet(x, x_0)
+    return quad_func
+
+
+def make_reg_qp_qe_quad_func(x_0, node_num):
+    """
+    Makes the regular (non-singular) quadratic potential, quadratic element function
+    that is integrated for the stiffness matrix
+    Parameters:
+        x_0: source point
+        node_num: which potential shape function [0-5]
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.quadratic_interp(xi, eta, nodes)
+        S = geo.stresslet(x, x_0)
+        phi = geo.shape_func_quadratic(xi, eta, nodes, node_num)
+        return phi * S
+    return quad_func
+
+
+def make_sing_qp_qe_quad_func(x_0, node_num, singular_ind):
+    """
+    Makes the sinuglar quadratic potential, quadratic element function
+    that is dotted with normal vectors and integrated for the stiffness matrix
+    Parameters:
+        x_0: source point
+        node_num: which potential shape function [0-5]
+        singular_ind: local singular index for a face
+    """
+    def quad_func(xi, eta, nodes):
+        x = geo.quadratic_interp(xi, eta, nodes)
+        phi = geo.shape_func_quadratic(xi, eta, nodes, node_num)
+        if node_num == singular_ind:
+            if (phi - 1) == 0: # getting around division by 0
+                return np.zeros([3, 3, 3])
+            else:
+                if np.linalg.norm(x - x_0) < 1e-6:
+                    print("nearly singular qp_qe x_hat error")
+                return (phi - 1) * geo.stresslet(x, x_0)
+        else:
+            if phi == 0:
+                return np.zeros([3, 3, 3])
+            else:
+                if np.linalg.norm(x - x_0) < 1e-6:
+                    print("nearly singular qp_qe x_hat error")
                 return (phi) * geo.stresslet(x, x_0)
     return quad_func

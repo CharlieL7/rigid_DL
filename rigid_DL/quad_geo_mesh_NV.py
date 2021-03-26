@@ -79,18 +79,18 @@ class Quad_Geo_Mesh_NV(Quad_Geo_Mesh):
         at the mesh verticies
         """
         Nf = self.faces.shape[0]
-        normals = np.empty([Nf, 6, 3])
+        quad_n = np.empty([Nf, 6, 3])
         for i, face in enumerate(self.faces):
-            nodes = self.get_tri_normals(i)
-            normals[i] = gq.quad_n_NV(nodes)
-        return normals
+            node_normals = self.get_tri_normals(i)
+            quad_n[i] = gq.quad_n_NV(node_normals)
+        return quad_n
 
 
     def calc_all_quad_hs(self):
         """
         Calculates all of the hs values that will be used for six point
         Gaussian quadrature. This version still requires over element normal
-        vector calculation to get hs.
+        vector calculation to get hs values.
         Returns:
             (Nf, 6, 3) ndarray
         """

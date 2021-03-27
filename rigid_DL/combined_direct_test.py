@@ -256,7 +256,7 @@ def lin_eigval_err(pot_mesh, geo_mesh, K_ev):
         out_vec / np.linalg.norm(out_vec, axis=1)[:,None],
         psi / np.linalg.norm(psi, axis=1)[:,None]
     )
-    rel_err_arr = abs_err_arr / RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, psi)
+    rel_err_arr = abs_err_arr / (eigval * RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, psi))
     ret = {
         "local_absolute_L2_error": abs_err_arr,
         "local_relative_L2_error":rel_err_arr,
@@ -302,7 +302,7 @@ def quad_eigval_err(pot_mesh, geo_mesh, K_ev):
         tmp_err = tmp_err.reshape(v_in.shape, order="C")
         tmp_err = np.linalg.norm(tmp_err, axis=1)
         abs_err_3x3.append(tmp_err)
-        rel_err_3x3.append(tmp_err / RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, v_in))
+        rel_err_3x3.append(tmp_err / (eigval_3x3[i] * RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, v_in)))
 
     ret = {
         "local_absolute_L2_error": abs_err_3x3,

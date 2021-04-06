@@ -74,6 +74,7 @@ def calc_ext_flow_magnitude(types, pot_mesh, geo_mesh, psi):
         (Pot_Type.CONSTANT, Mesh_Type.QUADRATIC): ext_flow_int_cp_qe,
         (Pot_Type.LINEAR, Mesh_Type.LINEAR): ext_flow_int_lp_le,
         (Pot_Type.LINEAR, Mesh_Type.QUADRATIC): ext_flow_int_lp_qe,
+        (Pot_Type.QUADRATIC, Mesh_Type.QUADRATIC): ext_flow_int_qp_qe,
     }
     return func_map[types](pot_mesh, geo_mesh, norm_psi)
 
@@ -149,6 +150,39 @@ def ext_flow_int_lp_qe(lin_pot_mesh, quad_geo_mesh, norm_psi):
                     norm_psi[node_2] * phi_2
                 )
                 return ret
+            return quad_func
+        ret += gq.int_over_tri_quad(
+            make_func(face_num),
+            face_nodes,
+            face_hs,
+        )
+    return ret / quad_geo_mesh.get_surface_area()
+
+
+def ext_flow_int_qp_qe(quad_pot_mesh, quad_geo_mesh, norm_psi):
+    pot_faces = quad_pot_mesh.get_faces()
+    num_faces = pot_faces.shape[0]
+    ret = 0.
+    for face_num in range(num_faces):
+        face_nodes = quad_geo_mesh.get_tri_nodes(face_num)
+        face_hs = quad_geo_mesh.get_hs(face_num)
+        def make_func(face_num):
+            def quad_func(xi, eta, _nodes):
+                node_0 = pot_faces[face_num, 0]
+                node_1 = pot_faces[face_num, 1]
+                node_2 = pot_faces[face_num, 2]
+                node_3 = pot_faces[face_num, 3]
+                node_4 = pot_faces[face_num, 4]
+                node_5 = pot_faces[face_num, 5]
+                norm_psi_arr = [
+                    norm_psi[node_0],
+                    norm_psi[node_1],
+                    norm_psi[node_2],
+                    norm_psi[node_3],
+                    norm_psi[node_4],
+                    norm_psi[node_5],
+                ]
+                return geo.quadratic_interp(xi, eta, norm_psi_arr)
             return quad_func
         ret += gq.int_over_tri_quad(
             make_func(face_num),

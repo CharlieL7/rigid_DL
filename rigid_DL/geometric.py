@@ -16,6 +16,7 @@ def linear_interp(xi, eta, nodes):
         eta : parametric coordinate, scalar
         xi : paramteric coordinate, scalar
         nodes : three nodes of triangle as rows in 3x3 ndarray
+            * also works for other order matrices (ex. (3,) ndarray)
     Returns:
         x : output position (3,) ndarray
     """
@@ -31,6 +32,7 @@ def quadratic_interp(xi, eta, nodes):
         xi : paramteric coordinate, scalar
         eta : parametric coordinate, scalar
         nodes : six nodes of triangle as rows in 3x6 ndarray
+            * also works for other order matrices (ex. (6,) ndarray)
     Returns:
         x : output position (3,) ndarray
     """

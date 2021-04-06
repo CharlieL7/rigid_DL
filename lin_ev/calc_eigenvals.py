@@ -1,5 +1,5 @@
-from rigid_DL.eigenvalues import *
-from rigid_DL.elliptic_integrals import *
+from eigenvalues import *
+from elliptic_integrals import *
 from scipy.integrate import quad
 from scipy.linalg import null_space
 import ast

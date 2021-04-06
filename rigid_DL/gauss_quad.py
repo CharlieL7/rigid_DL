@@ -6,6 +6,7 @@ import numpy as np
 import rigid_DL.geometric as geo
 
 # 6-point quadrature
+# STRANG5, https://people.sc.fsu.edu/~jburkardt/datasets/quadrature_rules_tri/quadrature_rules_tri.html
 a = 0.816847572980459
 b = 0.445948490915965
 c = 0.108103018168070

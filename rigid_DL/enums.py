@@ -8,3 +8,4 @@ class Mesh_Type(Enum):
 class Pot_Type(Enum):
     CONSTANT = 0
     LINEAR = 1
+    QUADRATIC = 2

@@ -377,7 +377,7 @@ def make_mat_qp_qe(quad_pot_mesh, quad_geo_mesh):
                 for node_num in range(6):
                     node_global_num = pot_faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_quad_n(
-                        make_sing_lp_qe_quad_func(
+                        make_sing_qp_qe_quad_func(
                             src_pt, node_num, local_singular_ind
                             ),
                         face_nodes,
@@ -391,7 +391,7 @@ def make_mat_qp_qe(quad_pot_mesh, quad_geo_mesh):
                 for node_num in range(6):
                     node_global_num = pot_faces[face_num, node_num] # global index for vert
                     sub_mat = gq.int_over_tri_quad_n(
-                        make_reg_lp_qe_quad_func(src_pt, node_num),
+                        make_reg_qp_qe_quad_func(src_pt, node_num),
                         face_nodes,
                         face_n,
                         face_hs,

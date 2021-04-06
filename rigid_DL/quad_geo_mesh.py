@@ -32,10 +32,6 @@ class Quad_Geo_Mesh(Geo_Mesh):
         self.normalize_flip_n()
         self.mom_inertia = self.calc_moment_inertia_tensor()
         (self.w, self.A_m) = self.calc_rotation_eig() #w is 3 ROWS of eigenvectors
-        print("Surface area:")
-        print(self.surf_area)
-        print("Moment of inertia:")
-        print(self.mom_inertia)
 
 
     def get_verts(self):

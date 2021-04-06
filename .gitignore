@@ -39,3 +39,7 @@
 meshes/*
 out/*
 *.vtk
+*.pdf
+
+# batch files
+*.sh

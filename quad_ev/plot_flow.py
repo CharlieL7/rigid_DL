@@ -3,9 +3,9 @@ import pyvista as pv
 import matplotlib.pyplot as plt
 
 H = np.array([
-    [-0.974793639765174],
-    [ 0.157761465309759],
-    [ 0.157761465309759],
+    [-0.964679416731502],
+     [-0.186270801435128],
+     [-0.186270801435128]
 ])
 
 fig = plt.figure()
@@ -21,7 +21,9 @@ v = H[1] * x * z
 w = H[2] * x * y
 
 ax.quiver(x, y, z, u, v, w, length=0.2)
-plt.show()
+ax.set_title(r"$Q^{(3)}$")
+fig.tight_layout(rect=[0, 0, 0.95, 1])
+fig.savefig("4-1-1_Q3_flow_quiver.pdf", format="pdf")
 """
 
 nx = 10

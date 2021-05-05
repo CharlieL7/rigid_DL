@@ -119,30 +119,33 @@ def calc_abg(nodes):
     tmp_2b = np.linalg.norm(nodes[5] - nodes[2])
     tmp_2g = np.linalg.norm(nodes[4] - nodes[1])
 
-    eps = 1e-10
+    eps = 1e-12
     if tmp_1a < eps:
-        if np.isclose(tmp_1a, tmp_2a, atol=1e-12):
+        if np.isclose(tmp_1a, tmp_2a, atol=1e-16):
             alpha = 0.5
         else:
-            sys.exit("quadratic interpolation error in calculating alpha (divide by nearly zero)")
+            print("quadratic interpolation error in calculating alpha, setting alpha to 0.5")
+            alpha = 0.5
     else:
         alpha = 1. / (1. + np.linalg.norm(nodes[3] - nodes[1]) /
                       np.linalg.norm(nodes[3] - nodes[0]))
 
     if tmp_1b < eps:
-        if np.isclose(tmp_1b, tmp_2b, atol=1e-12):
+        if np.isclose(tmp_1b, tmp_2b, atol=1e-16):
             beta = 0.5
         else:
-            sys.exit("quadratic interpolation error in calculating beta (divide by nearly zero)")
+            print("quadratic interpolation error in calculating beta, setting beta to 0.5")
+            beta = 0.5
     else:
         beta = 1. / (1. + np.linalg.norm(nodes[5] - nodes[2]) /
                      np.linalg.norm(nodes[5] - nodes[0]))
 
     if tmp_1g < eps:
-        if np.isclose(tmp_1g, tmp_2g, atol=1e-12):
+        if np.isclose(tmp_1g, tmp_2g, atol=1e-16):
             gamma = 0.5
         else:
-            sys.exit("quadratic interpolation error in calculating gamma (divide by nearly zero)")
+            print("quadratic interpolation error in calculating gamma, setting gamma to 0.5")
+            gamma = 0.5
     else:
         gamma = 1. / (1. + np.linalg.norm(nodes[4] - nodes[1]) /
                       np.linalg.norm(nodes[4] - nodes[2]))

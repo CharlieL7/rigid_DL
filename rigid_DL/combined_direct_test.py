@@ -74,8 +74,10 @@ def main():
         (Pot_Type.QUADRATIC, Mesh_Type.QUADRATIC): mata.make_mat_qp_qe,
     }
     K = stiff_map[(pot_type, mesh_type)](pot_mesh, geo_mesh) # stiffness matrix
+    print("matrix assembly successful")
 
     # RBM eigenfunctions
+
     num_nodes = pot_mesh.get_nodes().shape[0]
 
     u_d = np.zeros((num_nodes, 3))

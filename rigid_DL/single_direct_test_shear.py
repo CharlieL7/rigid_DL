@@ -87,7 +87,7 @@ def main():
         node = pot_nodes[m]
         xx = node - geo_mesh.get_centroid()
         u_d[m] = E_d @ xx
-
+    u_d /= (RDL_eig_helper.calc_inner_product_2((pot_type, mesh_type), pot_mesh, geo_mesh, u_d))**(1./2.)
     out_vec = np.reshape(K @ np.ravel(u_d), u_d.shape, order="C")
     
     a, b, _c = args.dims
@@ -110,17 +110,17 @@ def main():
         node = pot_nodes[m]
         xx = node - geo_mesh.get_centroid()
         expected[m] = E_expected @ xx
+    expected /= (RDL_eig_helper.calc_inner_product_2((pot_type, mesh_type), pot_mesh, geo_mesh, expected))**(1./2.)
 
-
-    #print("out_vec")
-    #print(out_vec)
-    #print("expected")
-    #print(expected)
-    abs_err = np.linalg.norm(out_vec - expected, axis=1)
+    print("out_vec")
+    print(out_vec)
+    print("expected")
+    print(expected)
+    local_err = np.linalg.norm(out_vec - expected, axis=1) * np.sqrt(geo_mesh.get_surface_area())
     #print(RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, expected))
-    rel_err = abs_err / RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, expected)
-    print("rel_err")
-    print(rel_err)
+    #rel_err = abs_err / RDL_eig_helper.calc_ext_flow_magnitude((pot_type, mesh_type), pot_mesh, geo_mesh, expected)
+    #print("rel_err")
+    #print(rel_err)
 
     # Write out to vtk file
     cells = [("triangle", pot_mesh.faces)] # to plot point data correctly must be this, might
@@ -134,8 +134,7 @@ def main():
             geo_mesh.get_verts(),
             cells,
             cell_data={
-                "rel_err_shear": [rel_err],
-                "abs_err_shear": [abs_err],
+                "local_err_shear": [local_err],
             },
         )
     elif pot_type == Pot_Type.LINEAR:
@@ -145,8 +144,7 @@ def main():
             pot_mesh.get_nodes(),
             cells,
             point_data={
-                "rel_err_shear": rel_err,
-                "abs_err_shear": abs_err,
+                "local_err_shear": local_err,
             },
         )
     meshio.write("{}_out.vtk".format(args.out_tag), mesh_io, file_format="vtk")

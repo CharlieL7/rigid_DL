@@ -32,6 +32,8 @@ Mat33 get_lin_tri_nodes(Matrix<double, Dynamic, 3> verts, Matrix<int, Dynamic, 3
 extern "C"
 {
 	void add_cp_le_DL_terms(double* K, double* nodes, double* verts, int* faces, int num_faces, double* normals, double* hs_arr);
+
+	void add_qp_qe_DL_terms(double* K, double* nodes, double* verts, int* faces, int num_nodes, double* normals, double* hs_arr);
 }
 
 Mat33 get_lin_tri_nodes(Matrix<double, Dynamic, 3> verts, Matrix<int, Dynamic, 3> faces, int face_num);

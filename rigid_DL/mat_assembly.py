@@ -417,6 +417,33 @@ def make_mat_qp_qe(quad_pot_mesh, quad_geo_mesh):
     return K
 
 
+def make_mat_qp_qe_cpp(quad_pot_mesh, quad_geo_mesh):
+    """
+    This version links to C library for speed
+    INCOMPLETE
+    """
+    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
+    mata_lib.add_qp_qe_DL_terms.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
+        ct.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
+    ]
+    mata_lib.add_qp_qe_DL_terms.restype = None
+    num_nodes = int(quad_pot_mesh.get_nodes().shape[0])
+    K = np.zeros((3 * num_nodes, 3 * num_nodes)).astype(np.float64)
+    nodes = quad_pot_mesh.get_nodes().astype(np.float64)
+    verts = quad_geo_mesh.get_verts().astype(np.float64)
+    faces = quad_geo_mesh.get_faces().astype(np.int32)
+    normals = quad_geo_mesh.normals.astype(np.float64)
+    hs_arr = quad_geo_mesh.hs.astype(np.float64)
+    mata_lib.add_cp_le_DL_terms(K, nodes, verts, faces, num_faces, normals, hs_arr)
+    return K
+
+
 def make_cp_le_quad_func(n, x_0):
     """
     Makes the constant potential function that is integrated over

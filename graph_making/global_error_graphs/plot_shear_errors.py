@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+import numpy as np
 
 num_ele = [80, 180, 320, 500, 720]
 cp_le_errs = [4.7896E-02, 2.0524E-02, 1.2096E-02, 6.9916E-03, 4.6580E-03]
@@ -19,31 +20,39 @@ def main():
     ax.plot(num_ele, lp_le_errs, label="lp-le", marker=".")
     ax.plot(num_ele, cp_qe_errs, label="cp-qe", marker=".")
     ax.plot(num_ele, lp_qe_errs, label="lp-qe", marker=".")
-    ax.yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.))
+    #abline(-1)
     ax.set_xlabel("Number of elements")
     ax.set_ylabel("Relative rotational velocity error")
     ax.legend(loc="upper right")
     fig.tight_layout(rect=[0, 0, 0.95, 1])
-    fig.savefig("global_shear_flow_error_linear_scale.pdf", format="pdf")
 
     ax.set_xscale("log")
     ax.set_yscale("log")
     fig.savefig("global_shear_flow_error_loglog_scale.pdf", format="pdf")
 
-    fig = plt.figure(figsize=(3.5, 3.5))
-    ax = fig.add_subplot(111)
-    ax.plot(cp_le_nodes, cp_le_errs, label="cp-le", marker=".")
-    ax.plot(lp_le_nodes, lp_le_errs, label="lp-le", marker=".")
-    ax.plot(cp_qe_nodes, cp_qe_errs, label="cp-qe", marker=".")
-    ax.plot(lp_qe_nodes, lp_qe_errs, label="lp-qe", marker=".")
-    ax.yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.))
-    ax.set_xlabel("Number of nodes")
-    ax.set_ylabel("Relative rotational velocity error")
-    ax.legend(loc="upper right")
-    fig.tight_layout(rect=[0, 0, 0.95, 1])
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    fig.savefig("global_shear_flow_error_loglog_nodes.pdf", format="pdf")
+    #fig = plt.figure(figsize=(3.5, 3.5))
+    #ax = fig.add_subplot(111)
+    #ax.plot(cp_le_nodes, cp_le_errs, label="cp-le", marker=".")
+    #ax.plot(lp_le_nodes, lp_le_errs, label="lp-le", marker=".")
+    #ax.plot(cp_qe_nodes, cp_qe_errs, label="cp-qe", marker=".")
+    #ax.plot(lp_qe_nodes, lp_qe_errs, label="lp-qe", marker=".")
+    #annotation.slope_marker((10, 2), -1.0, ax=ax)
+    #ax.yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.))
+    #ax.set_xlabel("Number of nodes")
+    #ax.set_ylabel("Relative rotational velocity error")
+    #ax.legend(loc="upper right")
+    #fig.tight_layout(rect=[0, 0, 0.95, 1])
+    #ax.set_xscale("log")
+    #ax.set_yscale("log")
+    #fig.savefig("global_shear_flow_error_loglog_nodes.pdf", format="pdf")
+
+
+def abline(power):
+    """Plot a power line"""
+    axes = plt.gca()
+    x_vals = np.array(axes.get_xlim())
+    y_vals = x_vals ** power
+    plt.plot(x_vals, y_vals, 'k--')
 
 
 if __name__ == "__main__":

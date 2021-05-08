@@ -6,6 +6,68 @@ import rigid_DL.gauss_quad as gq
 import rigid_DL.geometric as geo
 import ctypes as ct
 
+
+# Cpp linked assembly versions
+def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
+    """
+    Assembles the DL operator matrix for a constant potential,
+    linear geometry discretization.
+    Links to C library for speed.
+    """
+    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
+    mata_lib.add_cp_le_DL_terms.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
+        ct.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
+    ]
+    mata_lib.add_cp_le_DL_terms.restype = None
+    num_faces = int(lin_geo_mesh.get_faces().shape[0])
+    K = np.zeros((3 * num_faces, 3 * num_faces)).astype(np.float64)
+    nodes = cons_pot_mesh.get_nodes().astype(np.float64)
+    verts = lin_geo_mesh.get_verts().astype(np.float64)
+    faces = lin_geo_mesh.get_faces().astype(np.int32)
+    normals = lin_geo_mesh.normals.astype(np.float64)
+    hs_arr = lin_geo_mesh.hs.astype(np.float64)
+    mata_lib.add_cp_le_DL_terms(K, nodes, verts, faces, num_faces, normals, hs_arr)
+    return K
+
+
+def make_mat_lp_le_cpp(lin_pot_mesh, lin_geo_mesh):
+    """
+    Links to C library for speed
+    """
+    return 0
+
+
+def make_mat_cp_qe_cpp(cons_pot_mesh, quad_geo_mesh):
+    """
+    Links to C library for speed
+    """
+    return 0
+
+
+def make_mat_lp_qe_cpp(lin_pot_mesh, quad_geo_mesh):
+    """
+    Links to C library for speed
+    """
+    return 0
+
+
+def make_mat_qp_qe_cpp(quad_pot_mesh, quad_geo_mesh):
+    """
+    This version links to C library for speed
+    INCOMPLETE
+    """
+    return 0
+
+
+
+
+# all python assembly versions
 def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
     """
     Makes the stiffness matrix using closed surface singularity subtraction.
@@ -43,32 +105,6 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
         K[(3 * src_num):(3 * src_num + 3),
           (3 * src_num):(3 * src_num + 3)] -= 4. * np.pi * np.identity(3)
     K = np.dot(c_0, K)
-    return K
-
-
-def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
-    """
-    Links to C library for speed
-    """
-    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
-    mata_lib.add_cp_le_DL_terms.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
-        ct.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
-    ]
-    mata_lib.add_cp_le_DL_terms.restype = None
-    num_faces = int(lin_geo_mesh.get_faces().shape[0])
-    K = np.zeros((3 * num_faces, 3 * num_faces)).astype(np.float64)
-    nodes = cons_pot_mesh.get_nodes().astype(np.float64)
-    verts = lin_geo_mesh.get_verts().astype(np.float64)
-    faces = lin_geo_mesh.get_faces().astype(np.int32)
-    normals = lin_geo_mesh.normals.astype(np.float64)
-    hs_arr = lin_geo_mesh.hs.astype(np.float64)
-    mata_lib.add_cp_le_DL_terms(K, nodes, verts, faces, num_faces, normals, hs_arr)
     return K
 
 
@@ -124,32 +160,6 @@ def make_mat_lp_le(lin_pot_mesh, lin_geo_mesh):
         K[(3 * src_num):(3 * src_num + 3), (3 * src_num):(3 * src_num + 3)] -= c_0 * (
             4. * np.pi * np.identity(3)
         )
-    return K
-
-
-def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
-    """
-    Links to C library for speed
-    """
-    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
-    mata_lib.add_cp_le_DL_terms.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
-        ct.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
-    ]
-    mata_lib.add_cp_le_DL_terms.restype = None
-    num_faces = int(lin_geo_mesh.get_faces().shape[0])
-    K = np.zeros((3 * num_faces, 3 * num_faces)).astype(np.float64)
-    nodes = cons_pot_mesh.get_nodes().astype(np.float64)
-    verts = lin_geo_mesh.get_verts().astype(np.float64)
-    faces = lin_geo_mesh.get_faces().astype(np.int32)
-    normals = lin_geo_mesh.normals.astype(np.float64)
-    hs_arr = lin_geo_mesh.hs.astype(np.float64)
-    mata_lib.add_cp_le_DL_terms(K, nodes, verts, faces, num_faces, normals, hs_arr)
     return K
 
 
@@ -337,33 +347,6 @@ def make_mat_qp_qe(quad_pot_mesh, quad_geo_mesh):
     return K
 
 
-def make_mat_qp_qe_cpp(quad_pot_mesh, quad_geo_mesh):
-    """
-    This version links to C library for speed
-    INCOMPLETE
-    """
-    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
-    mata_lib.add_qp_qe_DL_terms.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
-        ct.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
-    ]
-    mata_lib.add_qp_qe_DL_terms.restype = None
-    num_nodes = int(quad_pot_mesh.get_nodes().shape[0])
-    K = np.zeros((3 * num_nodes, 3 * num_nodes)).astype(np.float64)
-    nodes = quad_pot_mesh.get_nodes().astype(np.float64)
-    verts = quad_geo_mesh.get_verts().astype(np.float64)
-    faces = quad_geo_mesh.get_faces().astype(np.int32)
-    normals = quad_geo_mesh.normals.astype(np.float64)
-    hs_arr = quad_geo_mesh.hs.astype(np.float64)
-    mata_lib.add_cp_le_DL_terms(K, nodes, verts, faces, num_faces, normals, hs_arr)
-    return K
-
-
 def make_cp_le_quad_func(n, x_0):
     """
     Makes the constant potential function that is integrated over
@@ -496,6 +479,8 @@ def make_sing_qp_qe_quad_func(x_0, node_num, singular_ind):
                     print("nearly singular qp_qe x_hat error")
                 return (phi) * geo.stresslet(x, x_0)
     return quad_func
+
+
 
 
 # Analytical Normal vector using versions
@@ -664,5 +649,3 @@ def make_sing_lp_le_NV_quad_func(normals, x_0, node_num, singular_ind):
                     print("nearly singular lp_le_NV x_hat error")
                 return (phi) * geo.stresslet_n(x, x_0, n)
     return quad_func
-
-

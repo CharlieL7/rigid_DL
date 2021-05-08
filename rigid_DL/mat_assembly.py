@@ -36,12 +36,15 @@ def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
     num_verts = int(lin_geo_mesh.get_verts().shape[0])
     num_faces = int(lin_geo_mesh.get_faces().shape[0])
     assert num_nodes == num_faces
-    K = np.zeros((3 * num_faces, 3 * num_faces)).astype(np.float64)
-    nodes = cons_pot_mesh.get_nodes().astype(np.float64)
-    verts = lin_geo_mesh.get_verts().astype(np.float64)
-    faces = lin_geo_mesh.get_faces().astype(np.int32)
-    normals = lin_geo_mesh.normals.astype(np.float64)
-    hs_arr = lin_geo_mesh.hs.astype(np.float64)
+    #tmp = np.arange(0, (3 * num_faces)**2)
+    #tmp = np.reshape(tmp, (3*num_faces, 3*num_faces))
+    #K = tmp.astype(np.float64, order="C")
+    K = np.zeros((3 * num_faces, 3 * num_faces)).astype(np.float64, order="C")
+    nodes = cons_pot_mesh.get_nodes().astype(np.float64, order="C")
+    verts = lin_geo_mesh.get_verts().astype(np.float64, order="C")
+    faces = lin_geo_mesh.get_faces().astype(np.int32, order="C")
+    normals = lin_geo_mesh.normals.astype(np.float64, order="C")
+    hs_arr = lin_geo_mesh.hs.astype(np.float64, order="C")
     mata_lib.add_cp_le_DL_terms(
         K,
         nodes,
@@ -171,6 +174,8 @@ def make_mat_cp_le(cons_pot_mesh, lin_geo_mesh):
                     face_nodes,
                     face_hs
                 )
+                if (face_num == 0 and src_num == 1):
+                    print(sub_mat * c_0)
                 K[(3 * src_num):(3 * src_num + 3),
                   (3 * face_num):(3 * face_num + 3)] += sub_mat
                 K[(3 * src_num):(3 * src_num + 3),

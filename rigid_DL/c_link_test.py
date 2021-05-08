@@ -35,9 +35,6 @@ def main():
 
     out_name = args.out_tag
     pot_type = Pot_Type(args.potential)
-    if (args.potential != 0):
-        print("Unsupported potential type")
-        sys.exit()
 
     io_mesh = meshio.read(args.mesh)
     verts = io_mesh.points
@@ -72,8 +69,9 @@ def main():
     t1 = time.process_time()
     K_py = stiff_map[(pot_type, mesh_type)](pot_mesh, geo_mesh) # stiffness matrix
     t2 = time.process_time()
+    print("normals py")
     print("K_py time: {}".format(t2 - t1))
-    K_c = mata.make_mat_cp_le_cpp(pot_mesh, geo_mesh)
+    K_c = mata.make_mat_lp_le_cpp(pot_mesh, geo_mesh)
     t1 = time.process_time()
     print("K_c time: {}".format(t1 - t2))
     

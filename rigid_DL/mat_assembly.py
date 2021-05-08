@@ -13,6 +13,11 @@ def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
     Assembles the DL operator matrix for a constant potential,
     linear geometry discretization.
     Links to C library for speed.
+    Parameters:
+        cons_pot_mesh: constant potential mesh
+        lin_geo_mesh: linear geometric mesh
+    Returns:
+        the stresslet matrix
     """
     mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
     mata_lib.add_cp_le_DL_terms.argtypes = [
@@ -38,21 +43,61 @@ def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
 
 def make_mat_lp_le_cpp(lin_pot_mesh, lin_geo_mesh):
     """
+    Assembles the DL operator matrix for a linear potential,
+    linear geometry discretization.
     Links to C library for speed
+    Parameters:
+        lin_pot_mesh: linear potential mesh
+        lin_geo_mesh: linear geometric mesh
+    Returns:
+        the stresslet matrix
     """
-    return 0
+    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
+    mata_lib.add_lp_le_DL_terms.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
+        ct.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
+    ]
+    mata_lib.add_cp_le_DL_terms.restype = None
+    num_nodes = int(lin_pot_mesh.get_nodes().shape[0])
+    K = np.zeros((3 * num_nodes, 3 * num_nodes)).astype(np.float64)
+    nodes = lin_pot_mesh.get_nodes().astype(np.float64)
+    verts = lin_geo_mesh.get_verts().astype(np.float64)
+    faces = lin_geo_mesh.get_faces().astype(np.int32)
+    normals = lin_geo_mesh.normals.astype(np.float64)
+    hs_arr = lin_geo_mesh.hs.astype(np.float64)
+    mata_lib.add_lp_le_DL_terms(K, nodes, verts, faces, num_nodes, normals, hs_arr)
+    return K
 
 
 def make_mat_cp_qe_cpp(cons_pot_mesh, quad_geo_mesh):
     """
+    Assembles the DL operator matrix for a linear potential,
+    linear geometry discretization.
     Links to C library for speed
+    Parameters:
+        cons_pot_mesh: constant potential mesh
+        quad_geo_mesh: quadratic geometric mesh
+    Returns:
+        the stresslet matrix
     """
     return 0
 
 
 def make_mat_lp_qe_cpp(lin_pot_mesh, quad_geo_mesh):
     """
+    Assembles the DL operator matrix for a linear potential,
+    linear geometry discretization.
     Links to C library for speed
+    Parameters:
+        lin_pot_mesh: linear potential mesh
+        quad_geo_mesh: quadratic geometric mesh
+    Returns:
+        the stresslet matrix
     """
     return 0
 

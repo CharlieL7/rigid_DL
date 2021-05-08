@@ -36,10 +36,7 @@ def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
     num_verts = int(lin_geo_mesh.get_verts().shape[0])
     num_faces = int(lin_geo_mesh.get_faces().shape[0])
     assert num_nodes == num_faces
-    #tmp = np.arange(0, (3 * num_faces)**2)
-    #tmp = np.reshape(tmp, (3*num_faces, 3*num_faces))
-    #K = tmp.astype(np.float64, order="C")
-    K = np.zeros((3 * num_faces, 3 * num_faces)).astype(np.float64, order="C")
+    K = np.zeros((3 * num_nodes, 3 * num_nodes)).astype(np.float64, order="C")
     nodes = cons_pot_mesh.get_nodes().astype(np.float64, order="C")
     verts = lin_geo_mesh.get_verts().astype(np.float64, order="C")
     faces = lin_geo_mesh.get_faces().astype(np.int32, order="C")
@@ -118,7 +115,41 @@ def make_mat_cp_qe_cpp(cons_pot_mesh, quad_geo_mesh):
     Returns:
         the stresslet matrix
     """
-    return 0
+    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
+    mata_lib.add_cp_qe_DL_terms.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
+        ct.c_int,
+        ct.c_int,
+        ct.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=3, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+    ]
+    mata_lib.add_cp_qe_DL_terms.restype = None
+    num_nodes = int(cons_pot_mesh.get_nodes().shape[0])
+    num_verts = int(quad_geo_mesh.get_verts().shape[0])
+    num_faces = int(quad_geo_mesh.get_faces().shape[0])
+    assert num_nodes == num_faces
+    K = np.zeros((3 * num_nodes, 3 * num_nodes)).astype(np.float64, order="C")
+    nodes = cons_pot_mesh.get_nodes().astype(np.float64, order="C")
+    verts = quad_geo_mesh.get_verts().astype(np.float64, order="C")
+    faces = quad_geo_mesh.get_faces().astype(np.int32, order="C")
+    quad_n = quad_geo_mesh.quad_n.astype(np.float64, order="C")
+    quad_hs = quad_geo_mesh.quad_hs.astype(np.float64, order="C")
+    mata_lib.add_cp_qe_DL_terms(
+        K,
+        nodes,
+        verts,
+        faces,
+        num_nodes,
+        num_verts,
+        num_faces,
+        quad_n,
+        quad_hs
+    )
+    return K
 
 
 def make_mat_lp_qe_cpp(lin_pot_mesh, quad_geo_mesh):
@@ -132,7 +163,41 @@ def make_mat_lp_qe_cpp(lin_pot_mesh, quad_geo_mesh):
     Returns:
         the stresslet matrix
     """
-    return 0
+    mata_lib = ct.CDLL("/home/charlie/local_git/rigid_DL/c_src/matrix_assem.so")
+    mata_lib.add_lp_qe_DL_terms.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="C_CONTIGUOUS"),
+        ct.c_int,
+        ct.c_int,
+        ct.c_int,
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=3, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
+    ]
+    mata_lib.add_lp_qe_DL_terms.restype = None
+    num_nodes = int(lin_pot_mesh.get_nodes().shape[0])
+    num_verts = int(quad_geo_mesh.get_verts().shape[0])
+    num_faces = int(quad_geo_mesh.get_faces().shape[0])
+    assert num_nodes == num_faces
+    K = np.zeros((3 * num_nodes, 3 * num_nodes)).astype(np.float64, order="C")
+    nodes = lin_pot_mesh.get_nodes().astype(np.float64, order="C")
+    verts = quad_geo_mesh.get_verts().astype(np.float64, order="C")
+    faces = quad_geo_mesh.get_faces().astype(np.int32, order="C")
+    quad_n = quad_geo_mesh.quad_n.astype(np.float64, order="C")
+    quad_hs = quad_geo_mesh.quad_hs.astype(np.float64, order="C")
+    mata_lib.add_lp_qe_DL_terms(
+        K,
+        nodes,
+        verts,
+        faces,
+        num_nodes,
+        num_verts,
+        num_faces,
+        quad_n,
+        quad_hs
+    )
+    return K
 
 
 def make_mat_qp_qe_cpp(quad_pot_mesh, quad_geo_mesh):

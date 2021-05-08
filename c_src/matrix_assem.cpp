@@ -129,6 +129,44 @@ extern "C"
 			K_map.block<3, 3>(3*src_num, 3*src_num) += c_0 * -4. * M_PI * Mat33::Identity();
 		}
 	}
+
+
+	void add_cp_qe_DL_terms(double* K, double* nodes, double* verts, int* faces, int num_nodes, int num_verts, int num_faces, double* quad_n, double* quad_hs)
+	{
+		/*
+		 * Makes the double layer terms for a constant potential, quadratic elements mesh.
+		 * Parameters:
+		 * 	K: stiffness matrix; (3 * num_nodes, 3 * num_nodes) array
+		 * 	nodes: mesh nodes, mesh vertices; (num_nodes, 3) array
+		 * 	verts: mesh verticies; (num_verts, 3) array
+		 * 	faces: mesh faces, the three nodes of a face; (num_faces, 3) array
+		 * 	num_nodes: number of nodes == number of verts
+		 *	num_verts: number of mesh verticies
+		 * 	num_faces: number of mesh faces
+		 *	quad_n: quadrature normal vectors; (num_faces, 6, 3) array
+		 *	quad_hs: square mesh areas at quadrature points, triangle area would be 0.5 of these; (num_faces, 6) array
+		 */
+		
+	}
+
+
+	void add_lp_qe_DL_terms(double* K, double* nodes, double* verts, int* faces, int num_nodes, int num_verts, int num_faces, double* quad_n, double* quad_hs)
+	{
+		/*
+		 * Makes the double layer terms for a linear potential, quadratic elements mesh.
+		 * Parameters:
+		 * 	K: stiffness matrix; (3 * num_nodes, 3 * num_nodes) array
+		 * 	nodes: mesh nodes, mesh vertices; (num_nodes, 3) array
+		 * 	verts: mesh verticies; (num_verts, 3) array
+		 * 	faces: mesh faces, the three nodes of a face; (num_faces, 3) array
+		 * 	num_nodes: number of nodes == number of verts
+		 *	num_verts: number of mesh verticies
+		 * 	num_faces: number of mesh faces
+		 *	quad_n: quadrature normal vectors; (num_faces, 6, 3) array
+		 *	quad_hs: square mesh areas at quadrature points, triangle area would be 0.5 of these; (num_faces, 6) array
+		 */
+
+	}
 }
 
 

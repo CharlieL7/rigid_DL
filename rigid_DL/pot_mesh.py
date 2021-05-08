@@ -31,7 +31,6 @@ class Pot_Mesh(ABC):
         Checks if a node is contained in a face
         Return the local node index if found in the face
         Gives the first index if multiple (there should not be multiple for a valid mesh)
-
         Parameters:
             node_num : global index for vertex
             face_num : index for face

@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import scipy.stats
 
-NUM_ELE = [80, 180, 320, 500, 720]
+NUM_NODES_CP = [80, 180, 320, 500, 720]
+NUM_NODES_LP = [42, 92, 162, 252, 362]
 FOLDER_NAMES = ["cp-le", "cp-qe", "lp-le", "lp-qe"]
 
 def main():
@@ -29,6 +30,7 @@ def main():
 
     fig, axs = plt.subplots(1, 4, sharey=True, figsize=(12, 3))
     axs = np.ravel(axs)
+    axs[0].set_ylim([0.001, 0.40])
 
     for i, fn in enumerate(FOLDER_NAMES):
         subfolder = os.path.join(os.path.join(args.in_dir, fn), "")
@@ -46,28 +48,35 @@ def main():
                 data = io_mesh.cell_data
             elif io_mesh.point_data:
                 data = io_mesh.point_data
-            E12_errs.append(np.max(data["local_err_E12"]))
-            E23_errs.append(np.max(data["local_err_E23"]))
-            E31_errs.append(np.max(data["local_err_E31"]))
-            Ep_errs.append(np.max(data["local_err_Ep"]))
-            Em_errs.append(np.max(data["local_err_Em"]))
-            H3x3_0_errs.append(np.max(data["local_err_3x3_0"]))
-            H3x3_1_errs.append(np.max(data["local_err_3x3_1"]))
-            H3x3_2_errs.append(np.max(data["local_err_3x3_2"]))
+            E12_errs.append(np.mean(data["local_err_E12"]))
+            E23_errs.append(np.mean(data["local_err_E23"]))
+            E31_errs.append(np.mean(data["local_err_E31"]))
+            Ep_errs.append(np.mean(data["local_err_Ep"]))
+            Em_errs.append(np.mean(data["local_err_Em"]))
+            H3x3_0_errs.append(np.mean(data["local_err_3x3_0"]))
+            H3x3_1_errs.append(np.mean(data["local_err_3x3_1"]))
+            H3x3_2_errs.append(np.mean(data["local_err_3x3_2"]))
+        if i in [0, 1]:
+            x_vals = NUM_NODES_CP
+        else:
+            x_vals = NUM_NODES_LP
+        axs[i].plot(x_vals, E12_errs, label=r"$E^{(12)}$", marker="o", markersize=3)
+        axs[i].plot(x_vals, E23_errs, label=r"$E^{(23)}$", marker="^", markersize=3)
+        axs[i].plot(x_vals, E31_errs, label=r"$E^{(31)}$", marker="s", markersize=3)
+        axs[i].plot(x_vals, Ep_errs, label=r"$E^{(+)}$", marker="p", markersize=3)
+        axs[i].plot(x_vals, Em_errs, label=r"$E^{(-)}$", marker="H", markersize=3)
 
-        axs[i].plot(NUM_ELE, E12_errs, label=r"$E^{(12)}$", marker="o", markersize=3)
-        axs[i].plot(NUM_ELE, E23_errs, label=r"$E^{(23)}$", marker="^", markersize=3)
-        axs[i].plot(NUM_ELE, E31_errs, label=r"$E^{(31)}$", marker="s", markersize=3)
-        axs[i].plot(NUM_ELE, Ep_errs, label=r"$E^{(+)}$", marker="p", markersize=3)
-        axs[i].plot(NUM_ELE, Em_errs, label=r"$E^{(-)}$", marker="H", markersize=3)
+        axs[i].plot(x_vals, H3x3_0_errs, label=r"$Q^{(1)}$", marker="*", markersize=3)
+        axs[i].plot(x_vals, H3x3_1_errs, label=r"$Q^{(2)}$", marker="d", markersize=3)
+        axs[i].plot(x_vals, H3x3_2_errs, label=r"$Q^{(3)}$", marker="x", markersize=3)
 
-        axs[i].plot(NUM_ELE, H3x3_0_errs, label=r"$Q^{(1)}$", marker="o", markersize=3)
-        axs[i].plot(NUM_ELE, H3x3_1_errs, label=r"$Q^{(2)}$", marker="^", markersize=3)
-        axs[i].plot(NUM_ELE, H3x3_2_errs, label=r"$Q^{(3)}$", marker="s", markersize=3)
+        axs[i].set_xscale("log")
+        axs[i].set_xlim([30, 1000])
+        axs[i].set_yscale("log")
 
-        axs[i].set_xlabel("Number of elements")
+        axs[i].set_xlabel("Number of nodes")
         if i in [0]:
-            axs[i].set_ylabel("Maximum local error")
+            axs[i].set_ylabel("Mean local error")
 
         add_textbox(axs[i], fn)
 
@@ -75,14 +84,14 @@ def main():
     props = dict(boxstyle='round', facecolor='skyblue', alpha=0.5)
     ellipsoid_tag = args.tag + "\n ellipsoid"
     handles, labels = axs[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="center", bbox_to_anchor=(0.96, 0.5))
+    fig.legend(handles, labels, loc="center", bbox_to_anchor=(0.965, 0.5))
     fig.text(0.965, 0.90, ellipsoid_tag,
         horizontalalignment="center",
         verticalalignment="center",
         bbox=props
     )
 
-    fig.tight_layout(rect=[0, 0, 0.93, 1])
+    fig.tight_layout(rect=[0, 0, 0.95, 1])
     fig.savefig("{}.pdf".format(args.outname), format="pdf")
 
 

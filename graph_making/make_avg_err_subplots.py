@@ -8,7 +8,7 @@ import matplotlib.ticker as mtick
 import scipy.stats
 
 NUM_ELE = [80, 180, 320, 500, 720]
-FOLDER_NAMES = ["cp-le", "cp-qe", "lp-le", "lp-qe", "qp-qe"]
+FOLDER_NAMES = ["cp-le", "cp-qe", "lp-le", "lp-qe"]
 
 def main():
     parser = argp.ArgumentParser(description="Creates plot of average local error data for the parameterizations")
@@ -27,7 +27,7 @@ def main():
     )
     args = parser.parse_args()
 
-    fig, axs = plt.subplots(1, 5, sharey=True, figsize=(12, 3))
+    fig, axs = plt.subplots(1, 4, sharey=True, figsize=(12, 3))
     axs = np.ravel(axs)
     axs[0].set_ylim([0.001, 0.40])
 
@@ -72,7 +72,7 @@ def main():
 
         axs[i].set_xlabel("Number of elements")
         if i in [0]:
-            axs[i].set_ylabel("Average local error")
+            axs[i].set_ylabel("Mean local error")
 
         add_textbox(axs[i], fn)
 

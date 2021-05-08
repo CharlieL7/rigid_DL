@@ -81,19 +81,22 @@ def main():
         getattr(ax, 'set_{}lim'.format(axis))((-max_radius, max_radius))
 
     dims = (4, 1, 1)
-    E_d, E_c = diag_eigvec("-", dims)
+    E_d, E_c = diag_eigvec("+", dims)
     ax = fig.gca(projection="3d")
-    x, y, z = np.meshgrid(np.arange(-2, 2.1, 0.50),
-                          np.arange(-1, 1.1, 0.50),
-                          np.arange(-1, 1.1, 1.0))
+    x, y, z = np.meshgrid(np.arange(-2, 2.1, 1.00),
+                          np.arange(-2, 2.1, 1.00),
+                          np.arange(-2, 2.1, 1.0))
 
     pos = np.array([x, y, z])
     vels = np.einsum("ij, jlmn -> ilmn", E_d, pos)
-    ax.quiver(x, y, z, vels[0], vels[1], vels[2], length=0.1)
-    ax.set_title(r"$E^{(-)}$")
-    plt.show()
-    #fig.tight_layout(rect=[0, 0, 0.95, 1])
-    #fig.savefig("Em_flow_quiver.pdf", format="pdf")
+    ax.quiver(x, y, z, vels[0], vels[1], vels[2], length=0.2, linewidth=0.70)
+    ax.set_title(r"$E^{(+)}$")
+    ax.set_xlabel(r"$x$")
+    ax.set_ylabel(r"$y$")
+    ax.set_zlabel(r"$z$")
+    #ax.view_init(elev=0., azim=0)
+    fig.tight_layout(rect=[0, 0, 0.95, 1])
+    fig.savefig("Ep_flow_quiver.pdf", format="pdf")
 
 
 if __name__ == "__main__":

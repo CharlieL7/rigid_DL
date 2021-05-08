@@ -66,7 +66,7 @@ def calc_3x3_eval(dims):
 
 def main():
     np.set_printoptions(precision=15)
-    dims = [4, 1, 1]
+    dims = [4, 4, 1]
     print("Dimensions:")
     print(dims)
     kappa_vec = calc_3x3_eval(dims)
@@ -77,7 +77,7 @@ def main():
     eigval_3x3 = -(1 + kappa_vec) / (kappa_vec -1)
     print("eigenvalues: {}".format(eigval_3x3))
     for i, evec in enumerate(evecs):
-        print("H vector ({}):\n{}".format(i, evec))
+        print("H vector ({}):\n{}".format(i, "\n".join(map(str, np.ravel(evec)))))
 
 
 if __name__ == "__main__":

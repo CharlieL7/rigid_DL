@@ -17,13 +17,14 @@ extern "C"
 	{
 		/*
 		 * Makes the double layer terms for a constant potential, linear elements mesh.
-		 * This function needs all of the raw data arrays because passing a python object
+		 * These function needs all of the raw data arrays because passing a python object
 		 * would not work
 		 * Parameters:
 		 * 	K: stiffness matrix; (3 * num_faces, 3 * num_faces) array
 		 * 	nodes: mesh nodes, triangle centers; (face_num, 3) array
 		 * 	verts: mesh verticies; (vert_num, 3) array
 		 * 	faces: mesh faces, the three nodes of a face; (face_num ,3) array
+		 * 	num_faces: number of mesh faces
 		 *	normals: mesh face normal vectors; (face_num ,3) array
 		 *	hs_arr: square mesh areas, triangle area would be 0.5 of these; (face_num,) array
 		 */
@@ -55,6 +56,22 @@ extern "C"
 		{
 			K_map.block<3, 3>(3*src_num, 3*src_num) += c_0 * -4 * M_PI * Mat33::Identity();
 		}
+	}
+
+
+	void add_lp_le_DL_terms(double* K, double* nodes, double* verts, int* faces, int num_nodes, double* normals, double* hs_arr)
+	{
+		/*
+		 * Makes the double layer terms for a linear potential, linear elements mesh.
+		 * Parameters:
+		 * 	K: stiffness matrix; (3 * num_nodes, 3 * num_nodes) array
+		 * 	nodes: mesh nodes, triangle centers; (face_num, 3) array
+		 * 	verts: mesh verticies; (vert_num, 3) array
+		 * 	faces: mesh faces, the three nodes of a face; (face_num ,3) array
+		 * 	num_nodes: number of BEM nodes
+		 *	normals: mesh face normal vectors; (face_num ,3) array
+		 *	hs_arr: square mesh areas, triangle area would be 0.5 of these; (face_num,) array
+		 */
 	}
 }
 

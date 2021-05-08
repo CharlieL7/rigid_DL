@@ -30,6 +30,8 @@ def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),
     ]
     mata_lib.add_cp_le_DL_terms.restype = None
+    num_nodes = int(cons_pot_mesh.get_nodes().shape[0])
+    num_verts = int(lin_geo_mesh.get_verts().shape[0])
     num_faces = int(lin_geo_mesh.get_faces().shape[0])
     K = np.zeros((3 * num_faces, 3 * num_faces)).astype(np.float64)
     nodes = cons_pot_mesh.get_nodes().astype(np.float64)
@@ -37,7 +39,7 @@ def make_mat_cp_le_cpp(cons_pot_mesh, lin_geo_mesh):
     faces = lin_geo_mesh.get_faces().astype(np.int32)
     normals = lin_geo_mesh.normals.astype(np.float64)
     hs_arr = lin_geo_mesh.hs.astype(np.float64)
-    mata_lib.add_cp_le_DL_terms(K, nodes, verts, faces, num_faces, normals, hs_arr)
+    mata_lib.add_cp_le_DL_terms(K, nodes, verts, faces, num_nodes, num_verts, num_faces, normals, hs_arr)
     return K
 
 

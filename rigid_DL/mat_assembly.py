@@ -124,7 +124,7 @@ def make_mat_cp_qe_cpp(cons_pot_mesh, quad_geo_mesh):
         ct.c_int,
         ct.c_int,
         ct.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=3, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags="C_CONTIGUOUS"),
     ]
     mata_lib.add_cp_qe_DL_terms.restype = None
@@ -136,7 +136,11 @@ def make_mat_cp_qe_cpp(cons_pot_mesh, quad_geo_mesh):
     nodes = cons_pot_mesh.get_nodes().astype(np.float64, order="C")
     verts = quad_geo_mesh.get_verts().astype(np.float64, order="C")
     faces = quad_geo_mesh.get_faces().astype(np.int32, order="C")
-    quad_n = quad_geo_mesh.quad_n.astype(np.float64, order="C")
+    print("original quad_n[0]")
+    print(quad_geo_mesh.quad_n[0])
+    print("reshaped quad_n[0]")
+    print(np.reshape(quad_geo_mesh.quad_n, [num_faces, 18])[0])
+    quad_n = np.reshape(quad_geo_mesh.quad_n, [num_faces, 18]).astype(np.float64, order="C") # check that this gives what you want!
     quad_hs = quad_geo_mesh.quad_hs.astype(np.float64, order="C")
     mata_lib.add_cp_qe_DL_terms(
         K,
@@ -179,7 +183,7 @@ def make_mat_lp_qe_cpp(lin_pot_mesh, quad_geo_mesh):
     num_nodes = int(lin_pot_mesh.get_nodes().shape[0])
     num_verts = int(quad_geo_mesh.get_verts().shape[0])
     num_faces = int(quad_geo_mesh.get_faces().shape[0])
-    assert num_nodes == num_faces
+    assert num_nodes == num_verts
     K = np.zeros((3 * num_nodes, 3 * num_nodes)).astype(np.float64, order="C")
     nodes = lin_pot_mesh.get_nodes().astype(np.float64, order="C")
     verts = quad_geo_mesh.get_verts().astype(np.float64, order="C")

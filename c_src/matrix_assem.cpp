@@ -13,8 +13,7 @@
 using Eigen::RowMajor;
 
 
-// Matrix assembly main functions
-
+// Matrix assembly main functions 
 extern "C"
 {
 	void add_cp_le_DL_terms(double* K, double* nodes, double* verts, int* faces, int num_nodes, int num_verts, int num_faces, double* normals, double* hs_arr)
@@ -143,10 +142,44 @@ extern "C"
 		 * 	num_nodes: number of nodes == number of verts
 		 *	num_verts: number of mesh verticies
 		 * 	num_faces: number of mesh faces
-		 *	quad_n: quadrature normal vectors; (num_faces, 6, 3) array
+		 *	quad_n: quadrature normal vectors; (num_faces, 18) array, must reshape 18 to (6, 3) array when using
 		 *	quad_hs: square mesh areas at quadrature points, triangle area would be 0.5 of these; (num_faces, 6) array
 		 */
-		
+		const double c_0 = 1. / (4. * M_PI);
+		Map<Matrix<double, Dynamic, Dynamic, RowMajor>> K_map(K, 3*num_nodes, 3*num_nodes);
+		Map<Matrix<double, Dynamic, 3, RowMajor>> _nodes(nodes, num_nodes, 3);
+		Map<Matrix<double, Dynamic, 3, RowMajor>> _verts(verts, num_verts, 3);
+		Map<Matrix<int, Dynamic, 3, RowMajor>> _faces(faces, num_faces, 3);
+		Map<Matrix<double, Dynamic, 18, RowMajor>> _quad_n(normals, num_faces, 18);
+		Map<Matrix<double, Dynamic, 2, RowMajor>> _quad_hs(hs_arr, num_faces, 6);
+
+		for (int face_num = 0; face_num < num_faces; ++face_num)
+		{
+			const Matrix<double, 6, 3> face_nodes = get_quad_tri_nodes(_verts, _faces, face_num);
+			Map<Matrix<double, 6, 3, RowMajor>> face_n(_quad_n.row(face_num), 6, 3);
+			const Matrix<double, 1, 6> face_hs = _quad_hs.row(face_num);
+			for (int src_num = 0; src_num < num_nodes; ++src_num)
+			{
+				const Mat13 node = _nodes.row(src_num);
+				if (face_num != src_num)
+				{
+					Mat33 sub_mat = int_over_tri_lin(
+						&cp_qe_DL_integrand,
+						face_nodes,
+						face_n,
+						node,
+						face_hs
+					);
+					K_map.block<3, 3>(3*src_num, 3*face_num) += sub_mat;
+					K_map.block<3, 3>(3*src_num, 3*src_num) -= sub_mat;
+				} //do nothing if face_num == src_num
+			}
+		}
+		for (int src_num = 0; src_num < num_nodes; ++src_num)
+		{
+			K_map.block<3, 3>(3*src_num, 3*src_num) += -4. * M_PI * Mat33::Identity();
+		}
+		K_map *= c_0;
 	}
 
 
@@ -189,6 +222,23 @@ Mat33 get_lin_tri_nodes(Matrix<double, Dynamic, 3> verts, Matrix<int, Dynamic, 3
 	}
 	return nodes;
 }
+
+
+Matrix<double, 6, 3> get_quad_tri_nodes(Matrix<double, Dynamic, 3> verts, Matrix<int, Dynamic, 6> faces, int face_num)
+{
+	/*
+	 * Gets the positions of the triangle nodes at face_num
+	 * Returns:
+	 * 	Triangle nodes as 6x3 matrix with rows as node positions
+	 */
+	Matrix<double, 1, 6> face = faces.row(face_num);
+	for (int i = 0; i < 6; ++i)
+	{
+		nodes.row(i) = verts.row(face(i));
+	}
+	return nodes;
+}
+
 
 
 std::pair<bool, int> check_in_face(Matrix<int, Dynamic, 3> faces, Tri_Order tri_order, int node_num, int face_num)
@@ -357,6 +407,10 @@ Mat33 lp_le_DL_integrand(double xi, double eta, Mat33 nodes, Mat13 n, Mat13 x_0,
 }
 
 
+
+Mat33 cp_qe_DL_integrand(double xi, double eta, Matrix<double, 6, 3> nodes, Mat13 x_0)
+
+
 // Geometric functions
 
 Mat33 stresslet_n(Mat13 x, Mat13 x_0, Mat13 n)
@@ -373,6 +427,13 @@ Mat13 pos_linear(double xi, double eta, Mat33 nodes)
     Mat13 x = (1. - xi - eta) * nodes.row(0) + xi * nodes.row(1) + eta * nodes.row(2);
     return x;
 }
+
+
+Mat13 pos_quadratic(double xi, double eta, Matrix<double, 6, 3> nodes)
+{
+	
+}
+
 
 double shape_func_linear(double xi, double eta, int num)
 {

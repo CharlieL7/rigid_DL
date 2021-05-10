@@ -67,8 +67,8 @@ def main():
     pot_mesh = pot_mesh_map[(pot_type, mesh_type)]
 
     stiff_map = {
-        (Pot_Type.CONSTANT, Mesh_Type.LINEAR): mata.make_mat_cp_le,
-        (Pot_Type.LINEAR, Mesh_Type.LINEAR): mata.make_mat_lp_le,
+        (Pot_Type.CONSTANT, Mesh_Type.LINEAR): mata.make_mat_cp_le_cpp,
+        (Pot_Type.LINEAR, Mesh_Type.LINEAR): mata.make_mat_lp_le_cpp,
         (Pot_Type.CONSTANT, Mesh_Type.QUADRATIC): mata.make_mat_cp_qe,
         (Pot_Type.LINEAR, Mesh_Type.QUADRATIC): mata.make_mat_lp_qe,
         (Pot_Type.QUADRATIC, Mesh_Type.QUADRATIC): mata.make_mat_qp_qe,

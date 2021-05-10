@@ -1,15 +1,15 @@
 """
 Extracts local error data in the form of average and maximum local error
-for a directory of vtk files. Intended to output a csv file for a given
-parameterization to the columns: number of elements, average local error, maximum
-local error. Appends a section to a csv file for each flow type.
+for a directory of vtk files. Intended to output a json file for a given
+parameterization.
 """
-
-import csv
+import json
 import os
+import sys
+import copy
 import argparse as argp
-import numpy as np
 import glob
+import numpy as np
 import meshio
 
 def main():
@@ -23,52 +23,80 @@ def main():
         help="Directory of vtk files to read"
     )
     parser.add_argument(
+        "param_type",
+        help="Parameterization type of the potentials"
+    )
+    parser.add_argument(
         "-o",
         "-out_name",
         help="Output csv file name",
         default="local_err_data"
     )
     args = parser.parse_args()
-    data_dict = {
-        "E12": [],
-        "E23": [],
-        "E31": [],
-        "Ep": [],
-        "Em": [],
-        "3x3_0": [],
-        "3x3_1": [],
-        "3x3_2": [],
+
+    if args.param_type in ["cp-le", "cp-qe"]:
+        pot_type = 0
+    elif args.param_type in ["lp-le", "lp-qe"]:
+        pot_type = 1
+    elif args.param_type in ["qp-le", "qp-qe"]:
+        pot_type = 2
+    else:
+        sys.exit("Unknown parameterization type: {}".format(args.param_type))
+
+    struct_dict = {
+        "num_nodes": [],
+        "num_ele": [],
+        "avg_loc_err": [],
+        "max_loc_err": [],
     }
-    
+    data_dict = {
+        args.param_type: {
+            "E12": copy.deepcopy(struct_dict),
+            "E23": copy.deepcopy(struct_dict),
+            "E31": copy.deepcopy(struct_dict),
+            "Ep": copy.deepcopy(struct_dict),
+            "Em": copy.deepcopy(struct_dict),
+            "3x3_0": copy.deepcopy(struct_dict),
+            "3x3_1": copy.deepcopy(struct_dict),
+            "3x3_2": copy.deepcopy(struct_dict),
+        }
+    }
+    flow_key_arr = [
+        "E12",
+        "E23",
+        "E31",
+        "Ep",
+        "Em",
+        "3x3_0",
+        "3x3_1",
+        "3x3_2",
+    ]
+
     in_dir = os.path.join(args.in_dir, "")
     assert os.path.isdir(in_dir)
     for vtk_file in sorted(glob.glob(in_dir + "*.vtk")):
         io_mesh = meshio.read(vtk_file)
         assert len(io_mesh.cells) == 1
-        num_ele = len(io_mesh.cells[0].data)
+        _num_ele = len(io_mesh.cells[0].data)
+        if pot_type == 0:
+            _num_nodes = _num_ele
+        elif pot_type == 1:
+            _num_nodes = _num_ele / 2 + 2
+        elif pot_type == 2:
+            _num_nodes = _num_ele * 2 + 2
+
         if io_mesh.cell_data:
             data = io_mesh.cell_data
         elif io_mesh.point_data:
             data = io_mesh.point_data
-        for flow_key in data_dict:
-            data_dict[flow_key].append([
-                num_ele,
-                np.mean(data["local_err_" + flow_key]),
-                np.max(data["local_err_" + flow_key]),
-            ])
+        for flow_key in flow_key_arr:
+            data_dict[args.param_type][flow_key]["num_nodes"].append(_num_nodes)
+            data_dict[args.param_type][flow_key]["num_ele"].append(_num_ele)
+            data_dict[args.param_type][flow_key]["avg_loc_err"].append(np.mean(data["local_err_" + flow_key]))
+            data_dict[args.param_type][flow_key]["max_loc_err"].append(np.max(data["local_err_" + flow_key]))
 
-    field_names = [
-        "number of elements",
-        "average local error",
-        "max local error",
-    ]
-    with open("{}.csv".format(args.o), "w", newline="") as csv_file:
-        writer = csv.writer(csv_file, delimiter=",", lineterminator=os.linesep)
-        for flow_key in data_dict:
-            csv_file.write("Flow type: " + flow_key + "\n")
-            writer.writerow(field_names)
-            writer.writerows(data_dict[flow_key])
-            csv_file.write("\n")
+    with open("{}.json".format(args.o), "w", newline="") as json_file:
+        json.dump(data_dict, json_file)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ Testing the stiffness matrix assembly for the mobility problem
 """
 import sys
 import csv
+import os
 import argparse as argp
 import numpy as np
 import meshio
@@ -115,12 +116,28 @@ def main():
         else:
             trans_v = (RDL_mobil_helper.calc_lp_qe_trans_vel(pot_mesh, geo_mesh, q))
             rot_v = (RDL_mobil_helper.calc_lp_qe_rot_vel(pot_mesh, geo_mesh, q))
-    
-    print("translational velocity:")
-    print(trans_v.tolist())
 
-    print("rotational velocity:")
-    print(rot_v.tolist())
+    #print("translational velocity:")
+    #print(trans_v.tolist())
+
+    #print("rotational velocity:")
+    #print(rot_v.tolist())
+
+    out_file = "{}_mobil_vel.txt".format(args.out_tag)
+    with open(out_file, 'w') as out:
+        csv_writer = csv.writer(out, delimiter=',', lineterminator=os.linesep)
+        out.write(
+            "dimensions:\n"
+        )
+        csv_writer.writerow(args.dims)
+        out.write(
+            "trans_vel:\n"
+        )
+        csv_writer.writerow(trans_v)
+        out.write(
+            "rot_vel:\n"
+        )
+        csv_writer.writerow(rot_v)
 
     #out_vec = np.reshape(q, (num_nodes, 3))
     #norm_err = np.linalg.norm(out_vec - psi, axis=1)

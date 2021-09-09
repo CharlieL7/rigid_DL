@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 fig = plt.figure(figsize=plt.figaspect(1))
 ax = fig.add_subplot(111, projection='3d')
 
-coefs = (0.25, 1, 1)  # Coefficients in a0/c x**2 + a1/c y**2 + a2/c z**2 = 1 
+coefs = (0.25, 0.25, 1)  # Coefficients in a0/c x**2 + a1/c y**2 + a2/c z**2 = 1 
 # Radii corresponding to the coefficients:
 rx, ry, rz = 1/np.sqrt(coefs)
 
@@ -28,9 +28,9 @@ for axis in 'xyz':
 
 
 H = np.array([
-    [-0.               ],
-    [ 0.707106781186547],
-    [-0.707106781186548]
+    [-0.5557809639546473],
+    [-0.5557809639546469],
+    [0.6182354245845886],
 ])
 
 
@@ -49,4 +49,4 @@ ax.set_xlabel(r"$x$")
 ax.set_ylabel(r"$y$")
 ax.set_zlabel(r"$z$")
 fig.tight_layout(rect=[0, 0, 0.95, 1])
-fig.savefig("4-1-1_Q1_flow_quiver.pdf", format="pdf")
+fig.savefig("4-4-1_Q1_flow_quiver.pdf", format="pdf")

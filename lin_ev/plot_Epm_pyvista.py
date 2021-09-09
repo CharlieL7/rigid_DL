@@ -44,6 +44,7 @@ def diag_eigvec(pm, dims):
     E_d = D - E
     tmp_max = np.amax(np.abs(E_d))
     E_d = np.divide(E_d, tmp_max) # normalize the matrix to largest value = 1
+    print(E_d)
     E_c = np.array([0, 0, 0])
     return (E_d, E_c)
 
@@ -71,7 +72,6 @@ def main():
     args = parser.parse_args()
 
     E_d, _E_c = diag_eigvec(args.type, args.dims)
-    print(E_d)
 
     nx = 4
     ny = 4
@@ -91,7 +91,6 @@ def main():
             return_source=True,
             n_points=200,
     )
-
     ellipsoid_mesh = pv.ParametricEllipsoid(args.dims[0]/2, args.dims[1]/2, args.dims[2]/2)
 
     p = pv.Plotter()

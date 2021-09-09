@@ -1,6 +1,9 @@
 import argparse as argp
 import json
+import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.text as text
+import matplotlib.lines as lines
 
 param_type_dict = {
     "cp-le": "o",
@@ -68,10 +71,19 @@ def main():
             verticalalignment="center",
             bbox=props
         )
+        add_slope_tri(axs[0])
         handles, labels = axs[0].get_legend_handles_labels()
         fig.legend(handles, labels, loc="center", bbox_to_anchor=(0.85, 0.62))
         fig.tight_layout(rect=[0, 0, 1.00, 1])
         fig.savefig("{}_{}_errors.pdf".format(args.dims, flow_key), format="pdf")
+
+
+def add_slope_tri(ax):
+    line = lines.Line2D(np.array([.30, .30, .40]), np.array([0.40, 0.30, 0.30]),
+            lw = 1, color="black", transform=ax.transAxes)
+    ax.add_line(line)
+    t = text.Text(0.35, 0.26, "-1", axes=ax, ha="center", va="center", transform=ax.transAxes, size=8)
+    ax.add_artist(t)
 
 
 if __name__ == "__main__":
